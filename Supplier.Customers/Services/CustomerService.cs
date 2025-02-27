@@ -1,6 +1,11 @@
-﻿using Microsoft.Extensions.Caching.Memory;
+﻿using FluentValidation;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Memory;
 using Supplier.Customers.Dto.Requests;
 using Supplier.Customers.Dto.Responses;
+using Supplier.Customers.Filters;
+using Supplier.Customers.Mappers;
+using Supplier.Customers.Mappers.Interfaces;
 using Supplier.Customers.Models;
 using Supplier.Customers.Repositories.Interfaces;
 using Supplier.Customers.Services.Interfaces;
@@ -9,39 +14,55 @@ namespace Supplier.Customers.Services
 {
     public class CustomerService : ICustomerService
     {
-        private readonly ICustomerRepository _repository;
-        private readonly IMemoryCache _cache;
-        private readonly TimeSpan _cacheDuration = TimeSpan.FromMinutes(10);
+        private readonly IValidator<CustomerRequestDto> _customerValidator;
+        private readonly ICustomerRepository _customerRepository;
+        private readonly ICustomerMapper _customerMapper;
+        private readonly IMemoryCache _customerCache;
+        private readonly TimeSpan _cacheDuration;
 
-        public CustomerService(ICustomerRepository repository, IMemoryCache cache)
+        public CustomerService(IValidator<CustomerRequestDto> customerValidator, ICustomerRepository repository, ICustomerMapper mapper, IMemoryCache cache)
         {
-            _repository = repository;
-            _cache = cache;
+            _customerValidator = customerValidator;
+            _customerRepository = repository;
+            _customerMapper = mapper;
+            _customerCache = cache;
+            _cacheDuration = TimeSpan.FromMinutes(10);
         }
 
-        public async Task<CustomerResponseDto> RegisterCustomerAsync(CustomerRequestDto dto)
+        public async Task<SingleCustomerResponseDto> CreateCustomerAsync(CustomerRequestDto dto)
         {
-            if (await _repository.ExistsAsync(dto.CPF))
-                throw new Exception("Cliente já cadastrado.");
+            var validationResult = await _customerValidator.ValidateAsync(dto);
 
-            if (dto.CreditLimit < 0)
-                throw new Exception("O limite de crédito não pode ser negativo.");
+            if (!validationResult.IsValid)
+                throw new ValidationException(validationResult.Errors);
 
-            var customer = new Customer { Name = dto.Name, CPF = dto.CPF, CreditLimit = dto.CreditLimit };
-            await _repository.AddAsync(customer);
+            var customer = _customerMapper.MapToCustomer(dto);
 
-            _cache.Remove("customers"); // Invalida cache ao cadastrar novo cliente
+            await _customerRepository.AddAsync(customer);
 
-            return new CustomerResponseDto { IdCliente = customer.Id, Status = "OK" };
+            _customerCache.Remove("customers"); // Invalida cache ao cadastrar novo cliente
+
+            return new SingleCustomerResponseDto(customer);
         }
 
-        public async Task<IEnumerable<Customer>> GetCustomersAsync()
+        public async Task<MultipleCustomersResponseDto> GetCustomersAsync(string? name, string? cpf, decimal? creditLimit)
         {
-            return await _cache.GetOrCreateAsync("customers", async entry =>
+            var customers =  await _customerCache.GetOrCreateAsync("customers", async entry =>
             {
                 entry.AbsoluteExpirationRelativeToNow = _cacheDuration;
-                return await _repository.GetAllAsync();
-            });
+                var customers = await _customerRepository.GetAllAsync();
+                return customers ?? new List<Customer>();
+            }) ?? new List<Customer>();
+
+            var customerRequestDto = _customerMapper.MapToCustomerRequestDto(name, cpf, creditLimit);
+
+            var filteredCustomers = CustomerFilter.ApplyFilters(customers, customerRequestDto);
+
+            var multipleCustomers = filteredCustomers
+                .Select(c => _customerMapper.MapToCustomerResponseDto(c))
+                .ToList();
+
+            return new MultipleCustomersResponseDto(multipleCustomers);
         }
     }
 }

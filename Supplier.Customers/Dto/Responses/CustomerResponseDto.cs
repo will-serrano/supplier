@@ -2,7 +2,9 @@
 {
     public class CustomerResponseDto
     {
-        public Guid IdCliente { get; set; }
-        public string Status { get; set; }
+        public Guid Id { get; set; }
+        public string? Name { get; set; }
+        public string? Cpf { get; set; }
+        public decimal CreditLimit { get; set; }
     }
 }

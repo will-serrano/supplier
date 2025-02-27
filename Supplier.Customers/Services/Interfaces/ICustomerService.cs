@@ -6,7 +6,7 @@ namespace Supplier.Customers.Services.Interfaces
 {
     public interface ICustomerService
     {
-        Task<CustomerResponseDto> RegisterCustomerAsync(CustomerRequestDto dto);
-        Task<IEnumerable<Customer>> GetCustomersAsync();
+        Task<SingleCustomerResponseDto> CreateCustomerAsync(CustomerRequestDto dto);
+        Task<MultipleCustomersResponseDto> GetCustomersAsync(string? name, string? cpf, decimal? creditLimit);
     }
 }
