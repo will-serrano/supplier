@@ -43,23 +43,15 @@ builder.Services.AddAuthorization();
 builder.Services.AddSingleton<IToken, JwtService>();
 builder.Services.AddSingleton<IDbConnectionFactory, DbConnectionFactory>();
 builder.Services.AddSingleton<JwtService>();
-builder.Services.AddSingleton<UserRepository>();
 builder.Services.AddScoped<IPasswordHasher<IdentityUser>, PasswordHasher<IdentityUser>>();
 
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 
-// Add services to the container.
 ConfigureServices(builder.Services);
 
 var app = builder.Build();
 
-app.UseSerilogRequestLogging();
-
-app.UseAuthentication();
-app.UseAuthorization();
-
-// Configure the HTTP request pipeline.
 ConfigureMiddleware(app);
 
 app.Run();
@@ -67,13 +59,14 @@ app.Run();
 void ConfigureServices(IServiceCollection services)
 {
     services.AddControllers();
-    // Add other services here
 }
 
 void ConfigureMiddleware(WebApplication app)
 {
+    app.UseSerilogRequestLogging();
     app.UseHttpsRedirection();
+    app.UseAuthentication();
     app.UseAuthorization();
+    app.UseHttpsRedirection();
     app.MapControllers();
-    // Add other middleware here
 }

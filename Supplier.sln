@@ -5,7 +5,7 @@ VisualStudioVersion = 17.12.35527.113 d17.12
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Supplier.Auth", "Supplier.Auth\Supplier.Auth.csproj", "{506F948F-4EF6-4EDC-AA04-F25682F66EB4}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Supplier.Customers", "Supplier.Clients\Supplier.Customers.csproj", "{63281793-6839-469F-B074-A4D6CA577DDB}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Supplier.Customers", "Supplier.Customers\Supplier.Customers.csproj", "{63281793-6839-469F-B074-A4D6CA577DDB}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Supplier.Transactions", "Supplier.Transactions\Supplier.Transactions.csproj", "{22F63C7A-D92B-471F-9A8F-28BDEBE9E0A9}"
 EndProject

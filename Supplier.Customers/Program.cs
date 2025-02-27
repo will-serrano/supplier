@@ -1,11 +1,15 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using Serilog;
 using Supplier.Customers.Configuration;
+using Supplier.Customers.Configuration.Interfaces;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+Log.Logger = new LoggerConfiguration()
+    .ReadFrom.Configuration(builder.Configuration)
+    .CreateLogger();
 
 builder.Services.AddControllers();
 
@@ -33,16 +37,27 @@ builder.Services
 
 builder.Services.AddAuthorization();
 
+builder.Services.AddSingleton<IDbConnectionFactory, DbConnectionFactory>();
+
+ConfigureServices(builder.Services);
+
 var app = builder.Build();
-app.UseAuthentication();
-app.UseAuthorization();
 
-// Configure the HTTP request pipeline.
-
-app.UseHttpsRedirection();
-
-app.UseAuthorization();
-
-app.MapControllers();
+ConfigureMiddleware(app);
 
 app.Run();
+
+void ConfigureServices(IServiceCollection services)
+{
+    services.AddControllers();
+}
+
+void ConfigureMiddleware(WebApplication app)
+{
+    app.UseSerilogRequestLogging();
+    app.UseHttpsRedirection();
+    app.UseAuthentication();
+    app.UseAuthorization();
+    app.UseHttpsRedirection();
+    app.MapControllers();
+}
