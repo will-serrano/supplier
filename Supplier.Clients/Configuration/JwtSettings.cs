@@ -1,4 +1,4 @@
-﻿namespace Supplier.Clients.Configuration
+﻿namespace Supplier.Customers.Configuration
 {
     public class JwtSettings
     {

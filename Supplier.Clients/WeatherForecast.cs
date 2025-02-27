@@ -1,4 +1,4 @@
-namespace Supplier.Clients
+namespace Supplier.Customers
 {
     public class WeatherForecast
     {

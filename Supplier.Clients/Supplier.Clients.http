@@ -1,6 +1,0 @@
-@Supplier.Clients_HostAddress = http://localhost:5175
-
-GET {{Supplier.Clients_HostAddress}}/weatherforecast/
-Accept: application/json
-
-###
