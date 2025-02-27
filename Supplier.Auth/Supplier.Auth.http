@@ -1,0 +1,6 @@
+@Supplier.Auth_HostAddress = http://localhost:5103
+
+GET {{Supplier.Auth_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

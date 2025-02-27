@@ -1,0 +1,41 @@
+# Ignore arquivos gerados pelo build
+bin/
+obj/
+
+# Ignore arquivos do Visual Studio
+.vscode/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Ignore pacotes NuGet
+*.nupkg
+packages/
+
+# Ignore configurações do Rider e Resharper
+.idea/
+*.DotSettings.user
+
+# Ignore arquivos de log e temporários
+*.log
+logs/
+
+# Ignore configurações locais
+appsettings.Development.json
+secrets.json
+
+# Ignore arquivos do sistema
+Thumbs.db
+.DS_Store
+
+# Ignore arquivos de cache do .NET
+**/node_modules/
+**/dist/
+**/.vs/
+**/TestResults/
+
+# Ignore configurações do Docker
+*.db
+**/docker-compose.override.yml
+**/docker-compose.*.override.yml
