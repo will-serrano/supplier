@@ -29,5 +29,15 @@ namespace Supplier.Customers.Repositories
         {
             return await _db.QueryAsync<Customer>("SELECT * FROM Customers");
         }
+
+        public async Task<Customer?> GetCustomerByIdAsync(Guid customerId)
+        {
+            return await _db.QuerySingleOrDefaultAsync<Customer>("SELECT * FROM Customers WHERE Id = @Id", new { Id = customerId });
+        }
+
+        public async Task UpdateCustomerAsync(Customer customer)
+        {
+            await _db.ExecuteAsync("UPDATE Customers SET Name = @Name, CPF = @CPF, CreditLimit = @CreditLimit WHERE Id = @Id", customer);
+        }
     }
 }

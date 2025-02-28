@@ -1,18 +1,27 @@
-using FluentValidation.AspNetCore;
 using FluentValidation;
+using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using Rebus.Config;
 using Serilog;
 using Supplier.Customers.Configuration;
 using Supplier.Customers.Configuration.Interfaces;
-using System.Text;
+using Supplier.Customers.Messaging;
 using Supplier.Customers.Validators;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
 Log.Logger = new LoggerConfiguration()
     .ReadFrom.Configuration(builder.Configuration)
     .CreateLogger();
+
+builder.Host.UseSerilog((context, services, configuration) => configuration
+    .ReadFrom.Configuration(context.Configuration)
+    .ReadFrom.Services(services)
+    .Enrich.FromLogContext()
+    .WriteTo.Console()
+);
 
 builder.Services.AddControllers();
 builder.Services.AddFluentValidationAutoValidation();
@@ -43,6 +52,18 @@ builder.Services
 builder.Services.AddAuthorization();
 
 builder.Services.AddSingleton<IDbConnectionFactory, DbConnectionFactory>();
+
+builder.Services.AddRebus(configure => configure
+    .Transport(t => t.UseRabbitMq("amqp://guest:guest@localhost", RoutingKeys.TransactionsToCustomers))
+    .Options(o =>
+    {
+        o.SetNumberOfWorkers(1);
+        // Outras opções (como política de retry) podem ser configuradas aqui
+    })
+    .Logging(l => l.Serilog())
+);
+
+builder.Services.AutoRegisterHandlersFromAssemblyOf<Program>();
 
 ConfigureServices(builder.Services);
 
