@@ -1,20 +1,22 @@
-﻿using FluentValidation.AspNetCore;
+﻿using FluentMigrator.Runner;
 using FluentValidation;
+using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Rebus.Config;
+using Serilog;
+using Supplier.Customers.Configuration;
+using Supplier.Customers.Configuration.Interfaces;
+using Supplier.Customers.Helper;
 using Supplier.Customers.Messaging;
-using Supplier.Customers.Repositories.Interfaces;
 using Supplier.Customers.Repositories;
+using Supplier.Customers.Repositories.Interfaces;
 using Supplier.Customers.Validators;
 using System.Text;
-using Supplier.Customers.Configuration.Interfaces;
-using Supplier.Customers.Configuration;
-using Serilog;
 
 namespace Supplier.Customers.Extensions
 {
-    public static class ServiceConfigurationExtensions
+    public static class CustomersServiceConfigurationExtensions
     {
         public static IServiceCollection ConfigureSerilogLogging(this IServiceCollection services, IConfiguration configuration)
         {
@@ -57,6 +59,28 @@ namespace Supplier.Customers.Extensions
                 });
 
             services.AddAuthorization();
+            return services;
+        }
+
+        public static IServiceCollection ConfigureFluentMigrator(this IServiceCollection services, IConfiguration configuration)
+        {
+            // Recupera a connection string e configura o FluentMigrator para SQLite
+            string connectionString = ConnectionStringHelper.GetSqliteConnectionString(configuration);
+
+            services.AddFluentMigratorCore()
+                .ConfigureRunner(rb => rb
+                    .AddSQLite()  // Provider para SQLite
+                    .WithGlobalConnectionString(connectionString)
+                    // Escaneia a assembly atual para encontrar as migrações
+                    .ScanIn(typeof(Program).Assembly).For.Migrations())
+                .AddLogging(lb => lb.AddFluentMigratorConsole());
+
+            return services;
+        }
+
+        public static IServiceCollection ConfigureControllers(this IServiceCollection services)
+        {
+            services.AddControllers();
             return services;
         }
 

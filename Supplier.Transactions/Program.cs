@@ -1,5 +1,5 @@
+using FluentMigrator.Runner;
 using Serilog;
-using Supplier.Transactions.Configuration;
 using Supplier.Transactions.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -11,26 +11,31 @@ builder.Host.UseSerilog((context, services, configuration) => configuration
     .WriteTo.Console()
 );
 
-builder.Services.Configure<CustomerApiOptions>(builder.Configuration.GetSection("CustomerApi"));
-
-builder.Services.ConfigureSerilogLogging(builder.Configuration);
-builder.Services.ConfigureHttpClients();
-builder.Services.ConfigureJwtAuthentication(builder.Configuration);
-builder.Services.ConfigureDependencies();
-builder.Services.ConfigureRebusMessaging();
-
-builder.Services.AddControllers();
-
-// Registering services
-
+// Configura as dependências e serviços usando os métodos de extensão
+builder.Services
+    .ConfigureSerilogLogging(builder.Configuration)
+    .ConfigureHttpClients(builder.Configuration)
+    .ConfigureFluentValidation()
+    .ConfigureJwtAuthentication(builder.Configuration)
+    .ConfigureDependencies()
+    .ConfigureFluentMigrator(builder.Configuration)
+    .ConfigureControllers()
+    .ConfigureRebusMessaging();
 
 var app = builder.Build();
 
-app.UseHttpsRedirection();
+// Executa as migrações do FluentMigrator
+using (var scope = app.Services.CreateScope())
+{
+    var runner = scope.ServiceProvider.GetRequiredService<IMigrationRunner>();
+    runner.MigrateUp();
+}
 
+// Configura os middlewares
+app.UseSerilogRequestLogging();
+app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
-
 app.MapControllers();
 
 app.Run();

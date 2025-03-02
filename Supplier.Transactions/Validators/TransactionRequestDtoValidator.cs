@@ -7,12 +7,15 @@ namespace Supplier.Transactions.Validators
     {
         public TransactionRequestDtoValidator()
         {
-            RuleFor(x => x.CustomerId)
-                .NotEmpty()
-                .WithMessage("CustomerId is required.");
-
+            // Exemplo de regra para validar o valor da transação (Amount)
             RuleFor(x => x.Amount)
-                .GreaterThan(0).WithMessage("Amount must be greater than zero.");
+                .NotNull().WithMessage("O valor da transação é obrigatório.")
+                .GreaterThan(0).WithMessage("O valor da transação deve ser maior que zero.");
+
+            // Exemplo de regra para validar o identificador do cliente
+            RuleFor(x => x.CustomerId)
+                .NotEmpty().WithMessage("O ID do cliente é obrigatório.");
+
         }
     }
 }

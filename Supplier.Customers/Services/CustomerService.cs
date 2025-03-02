@@ -1,10 +1,8 @@
 ﻿using FluentValidation;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory;
 using Supplier.Customers.Dto.Requests;
 using Supplier.Customers.Dto.Responses;
 using Supplier.Customers.Filters;
-using Supplier.Customers.Mappers;
 using Supplier.Customers.Mappers.Interfaces;
 using Supplier.Customers.Models;
 using Supplier.Customers.Repositories.Interfaces;
@@ -12,22 +10,17 @@ using Supplier.Customers.Services.Interfaces;
 
 namespace Supplier.Customers.Services
 {
-    public class CustomerService : ICustomerService
+    public class CustomerService(
+        IValidator<CustomerRequestDto> customerValidator, 
+        ICustomerRepository repository, 
+        ICustomerMapper mapper, 
+        IMemoryCache cache) : ICustomerService
     {
-        private readonly IValidator<CustomerRequestDto> _customerValidator;
-        private readonly ICustomerRepository _customerRepository;
-        private readonly ICustomerMapper _customerMapper;
-        private readonly IMemoryCache _customerCache;
-        private readonly TimeSpan _cacheDuration;
-
-        public CustomerService(IValidator<CustomerRequestDto> customerValidator, ICustomerRepository repository, ICustomerMapper mapper, IMemoryCache cache)
-        {
-            _customerValidator = customerValidator;
-            _customerRepository = repository;
-            _customerMapper = mapper;
-            _customerCache = cache;
-            _cacheDuration = TimeSpan.FromMinutes(10);
-        }
+        private readonly IValidator<CustomerRequestDto> _customerValidator = customerValidator;
+        private readonly ICustomerRepository _customerRepository = repository;
+        private readonly ICustomerMapper _customerMapper = mapper;
+        private readonly IMemoryCache _customerCache = cache;
+        private readonly TimeSpan _cacheDuration = TimeSpan.FromMinutes(10);
 
         public async Task<SingleCustomerResponseDto> CreateCustomerAsync(CustomerRequestDto dto)
         {
@@ -51,8 +44,8 @@ namespace Supplier.Customers.Services
             {
                 entry.AbsoluteExpirationRelativeToNow = _cacheDuration;
                 var customers = await _customerRepository.GetAllAsync();
-                return customers ?? new List<Customer>();
-            }) ?? new List<Customer>();
+                return customers ?? [];
+            }) ?? [];
 
             var customerRequestDto = _customerMapper.MapToCustomerRequestDto(name, cpf, creditLimit);
 

@@ -1,11 +1,8 @@
+using FluentMigrator.Runner;
 using Serilog;
 using Supplier.Customers.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
-
-Log.Logger = new LoggerConfiguration()
-    .ReadFrom.Configuration(builder.Configuration)
-    .CreateLogger();
 
 builder.Host.UseSerilog((context, services, configuration) => configuration
     .ReadFrom.Configuration(context.Configuration)
@@ -14,14 +11,24 @@ builder.Host.UseSerilog((context, services, configuration) => configuration
     .WriteTo.Console()
 );
 
-builder.Services.ConfigureSerilogLogging(builder.Configuration);
-builder.Services.AddControllers();
-builder.Services.ConfigureFluentValidation();
-builder.Services.ConfigureJwtAuthentication(builder.Configuration);
-builder.Services.ConfigureDependencies();
-builder.Services.ConfigureRebusMessaging();
+// Configura as dependências e serviços usando os métodos de extensão
+builder.Services
+    .ConfigureSerilogLogging(builder.Configuration)
+    .ConfigureFluentValidation()
+    .ConfigureJwtAuthentication(builder.Configuration)
+    .ConfigureDependencies()
+    .ConfigureFluentMigrator(builder.Configuration)
+    .ConfigureControllers()
+    .ConfigureRebusMessaging();
 
 var app = builder.Build();
+
+// Executa as migrações do FluentMigrator
+using (var scope = app.Services.CreateScope())
+{
+    var runner = scope.ServiceProvider.GetRequiredService<IMigrationRunner>();
+    runner.MigrateUp();
+}
 
 // Configura os middlewares
 app.UseSerilogRequestLogging();

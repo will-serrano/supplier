@@ -1,28 +1,32 @@
-﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
+﻿using FluentMigrator.Runner;
+using FluentValidation;
+using FluentValidation.AspNetCore;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Polly;
 using Polly.Extensions.Http;
 using Rebus.Config;
 using Serilog;
-using Supplier.Transactions.HttpClients.Interfaces;
-using Supplier.Transactions.HttpClients;
-using System.Text;
 using Supplier.Transactions.Configuration;
-using Supplier.Transactions.Messaging;
-using Microsoft.Extensions.Options;
-using FluentValidation;
+using Supplier.Transactions.Configuration.Interfaces;
 using Supplier.Transactions.Dto.Requests;
-using Supplier.Transactions.Mappers.Interfaces;
+using Supplier.Transactions.Helper;
+using Supplier.Transactions.HttpClients;
+using Supplier.Transactions.HttpClients.Interfaces;
 using Supplier.Transactions.Mappers;
-using Supplier.Transactions.Repositories.Interfaces;
+using Supplier.Transactions.Mappers.Interfaces;
+using Supplier.Transactions.Messaging;
 using Supplier.Transactions.Repositories;
-using Supplier.Transactions.Services.Interfaces;
+using Supplier.Transactions.Repositories.Interfaces;
 using Supplier.Transactions.Services;
+using Supplier.Transactions.Services.Interfaces;
 using Supplier.Transactions.Validators;
+using System.Text;
 
 namespace Supplier.Transactions.Extensions
 {
-    public static class ServiceConfigurationExtensions
+    public static class TransactionsServiceConfigurationExtensions
     {
         public static IServiceCollection ConfigureSerilogLogging(this IServiceCollection services, IConfiguration configuration)
         {
@@ -34,8 +38,18 @@ namespace Supplier.Transactions.Extensions
             return services;
         }
 
-        public static IServiceCollection ConfigureHttpClients(this IServiceCollection services)
+        public static IServiceCollection ConfigureFluentValidation(this IServiceCollection services)
         {
+            services.AddFluentValidationAutoValidation();
+            services.AddValidatorsFromAssemblyContaining<TransactionRequestDtoValidator>();
+            return services;
+        }
+
+        public static IServiceCollection ConfigureHttpClients(this IServiceCollection services, IConfiguration configuration)
+        {
+
+            services.Configure<CustomerApiOptions>(configuration.GetSection("CustomerApi"));
+
             services.AddTransient<AuthenticatedHttpClientHandler>();
 
             services.AddHttpClient<ICustomerValidationClient, CustomerValidationClient>((sp, client) =>
@@ -95,8 +109,31 @@ namespace Supplier.Transactions.Extensions
             return services;
         }
 
+        public static IServiceCollection ConfigureFluentMigrator(this IServiceCollection services, IConfiguration configuration)
+        {
+            // Recupera a connection string e configura o FluentMigrator para SQLite
+            string connectionString = ConnectionStringHelper.GetSqliteConnectionString(configuration);
+
+            services.AddFluentMigratorCore()
+                .ConfigureRunner(rb => rb
+                    .AddSQLite()  // Provider para SQLite
+                    .WithGlobalConnectionString(connectionString)
+                    // Escaneia a assembly atual para encontrar as migrações
+                    .ScanIn(typeof(Program).Assembly).For.Migrations())
+                .AddLogging(lb => lb.AddFluentMigratorConsole());
+
+            return services;
+        }
+
+        public static IServiceCollection ConfigureControllers(this IServiceCollection services)
+        {
+            services.AddControllers();
+            return services;
+        }
+
         public static IServiceCollection ConfigureDependencies(this IServiceCollection services)
         {
+            services.AddSingleton<IDbConnectionFactory, DbConnectionFactory>();
             services.AddTransient<ITransactionRequestService, TransactionRequestService>();
             services.AddTransient<ITransactionRequestRepository, TransactionRequestRepository>();
             services.AddTransient<ITransactionRequestMapper, TransactionRequestMapper>();

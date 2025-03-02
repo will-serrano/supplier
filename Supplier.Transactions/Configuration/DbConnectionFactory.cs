@@ -1,10 +1,10 @@
 ﻿using Microsoft.Data.Sqlite;
 using Serilog;
-using Supplier.Auth.Configuration.Interfaces;
-using Supplier.Auth.Helper;
+using Supplier.Transactions.Configuration.Interfaces;
+using Supplier.Transactions.Helper;
 using System.Data;
 
-namespace Supplier.Auth.Configuration
+namespace Supplier.Transactions.Configuration
 {
     public class DbConnectionFactory : IDbConnectionFactory
     {
