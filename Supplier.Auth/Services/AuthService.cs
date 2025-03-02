@@ -20,11 +20,11 @@ namespace Supplier.Auth.Services
         {
             var userExists = await _userRepository.UserExists(request.Email);
             if (userExists == true)
-                return new RegisterResponseDto(0, "Usuário já cadastrado.");
+                return new RegisterResponseDto(Guid.Empty, "Usuário já cadastrado.");
 
             var userId = await _userRepository.CreateUser(request.Email, request.Password);
-            if (userId == null || userId == 0)
-                return new RegisterResponseDto(0, "Erro ao criar usuário.");
+            if (userId == null || userId == Guid.Empty)
+                return new RegisterResponseDto(Guid.Empty, "Erro ao criar usuário.");
 
             return new RegisterResponseDto(userId.Value, "Usuário cadastrado com sucesso.");
         }

@@ -21,7 +21,7 @@ namespace Supplier.Auth.Repositories
             _passwordHasher = passwordHasher;
         }
 
-        public async Task<int?> CreateUser(string email, string password)
+        public async Task<Guid?> CreateUser(string email, string password)
         {
             using var connection = _dbConnectionFactory.CreateConnection();
 
@@ -39,7 +39,7 @@ namespace Supplier.Auth.Repositories
                 return null;
             }
 
-            return await connection.ExecuteScalarAsync<int>(query, new
+            return await connection.ExecuteScalarAsync<Guid>(query, new
             {
                 Email = email,
                 PasswordHash = hashedPassword
@@ -75,7 +75,7 @@ namespace Supplier.Auth.Repositories
             );
         }
 
-        public async Task<IEnumerable<string>?> GetUserRoles(int userId)
+        public async Task<IEnumerable<string>?> GetUserRoles(Guid userId)
         {
             using var connection = _dbConnectionFactory.CreateConnection();
             if (connection == null)

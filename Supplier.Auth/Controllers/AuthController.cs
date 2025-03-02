@@ -23,7 +23,7 @@ namespace Supplier.Auth.Controllers
         {
             var response = await _authService.RegisterUser(request);
 
-            if (response.UserId == 0)
+            if (response.UserId == Guid.Empty)
                 return BadRequest(response);
 
             return Ok(response);

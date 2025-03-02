@@ -6,10 +6,10 @@ namespace Supplier.Auth.Repositories.Interfaces
 {
     public interface IUserRepository
     {
-        Task<int?> CreateUser(string email, string password);
+        Task<Guid?> CreateUser(string email, string password);
         Task<bool?> UserExists(string email);
         Task<User?> GetUserByEmail(string email);
-        Task<IEnumerable<string>?> GetUserRoles(int userId);
+        Task<IEnumerable<string>?> GetUserRoles(Guid userId);
         Task<bool> VerifyPassword(string email, string password);
     }
 }

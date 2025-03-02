@@ -2,10 +2,10 @@
 {
     public class RegisterResponseDto
     {
-        public int UserId { get; set; }
+        public Guid UserId { get; set; }
         public string Message { get; set; }
 
-        public RegisterResponseDto(int userId, string message)
+        public RegisterResponseDto(Guid userId, string message)
         {
             UserId = userId;
             Message = message;

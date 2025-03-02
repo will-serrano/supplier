@@ -17,7 +17,7 @@ namespace Supplier.Auth.Services
             _jwtSettings = jwtSettings.Value;
         }
 
-        public string GenerateToken(int userId, string email, IEnumerable<string> roles)
+        public string GenerateToken(Guid userId, string email, IEnumerable<string> roles)
         {
             var claims = new List<Claim>
             {
