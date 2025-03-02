@@ -4,6 +4,7 @@ using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Data.Sqlite;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using Rebus.Config;
 using Rebus.Serialization;
 using Serilog;
@@ -15,6 +16,7 @@ using Supplier.Customers.Repositories;
 using Supplier.Customers.Repositories.Interfaces;
 using Supplier.Customers.Validators;
 using System.Data;
+using System.Reflection;
 using System.Text;
 
 namespace Supplier.Customers.Extensions
@@ -90,6 +92,45 @@ namespace Supplier.Customers.Extensions
 
         public static IServiceCollection ConfigureDependencies(this IServiceCollection services, IConfiguration configuration)
         {
+            services.AddEndpointsApiExplorer();
+            services.AddSwaggerGen(c =>
+            {
+                c.SwaggerDoc("v1", new OpenApiInfo
+                {
+                    Title = "Supplier.Customers API",
+                    Version = "v1",
+                    Description = "API para clientes da Supplier."
+                });
+
+                c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+                {
+                    In = ParameterLocation.Header,
+                    Description = "Insira o token JWT no formato: Bearer {seu_token}",
+                    Name = "Authorization",
+                    Type = SecuritySchemeType.Http,
+                    Scheme = "Bearer"
+                });
+
+                c.AddSecurityRequirement(new OpenApiSecurityRequirement
+                {
+                    {
+                        new OpenApiSecurityScheme
+                        {
+                            Reference = new OpenApiReference
+                            {
+                                Type = ReferenceType.SecurityScheme,
+                                Id = "Bearer"
+                            }
+                        },
+                        new string[] {}
+                    }
+                });
+
+                var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+                var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+                c.IncludeXmlComments(xmlPath);
+
+            });
             services.AddSingleton<IDbConnectionFactory, DbConnectionFactory>();
             services.AddSingleton<ISerializer, RebusMessageSerializer>();
             services.AddSingleton<IDbConnectionFactory, DbConnectionFactory>();

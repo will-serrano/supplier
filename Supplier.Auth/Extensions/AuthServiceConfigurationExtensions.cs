@@ -13,6 +13,8 @@ using Supplier.Auth.Configuration.Interfaces;
 using Supplier.Auth.Configuration;
 using Microsoft.Data.Sqlite;
 using System.Data;
+using Microsoft.OpenApi.Models;
+using System.Reflection;
 
 namespace Supplier.Auth.Extensions
 {
@@ -57,7 +59,44 @@ namespace Supplier.Auth.Extensions
 
         public static IServiceCollection ConfigureDependencies(this IServiceCollection services, IConfiguration configuration)
         {
-            // Registra as dependências da aplicação
+            services.AddEndpointsApiExplorer();
+            services.AddSwaggerGen(c =>
+            {
+                c.SwaggerDoc("v1", new OpenApiInfo
+                {
+                    Title = "Supplier.Auth API",
+                    Version = "v1",
+                    Description = "API para autenticação da Supplier."
+                });
+
+                c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+                {
+                    In = ParameterLocation.Header,
+                    Description = "Insira o token JWT no formato: Bearer {seu_token}",
+                    Name = "Authorization",
+                    Type = SecuritySchemeType.Http,
+                    Scheme = "Bearer"
+                });
+
+                c.AddSecurityRequirement(new OpenApiSecurityRequirement
+                {
+                    {
+                        new OpenApiSecurityScheme
+                        {
+                            Reference = new OpenApiReference
+                            {
+                                Type = ReferenceType.SecurityScheme,
+                                Id = "Bearer"
+                            }
+                        },
+                        new string[] {}
+                    }
+                });
+
+                var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+                var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+                c.IncludeXmlComments(xmlPath);
+            });
             services.AddSingleton<IToken, JwtService>();
             services.AddSingleton<IDbConnectionFactory, DbConnectionFactory>();
             services.AddScoped<IDbConnection>(sp =>
