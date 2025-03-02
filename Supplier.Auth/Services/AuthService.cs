@@ -2,6 +2,7 @@
 using Supplier.Auth.Dto.Responses;
 using Supplier.Auth.Repositories.Interfaces;
 using Supplier.Auth.Services.Interfaces;
+using System.Security.Claims;
 
 namespace Supplier.Auth.Services
 {
@@ -26,6 +27,12 @@ namespace Supplier.Auth.Services
             if (userId == null || userId == Guid.Empty)
                 return new RegisterResponseDto(Guid.Empty, "Erro ao criar usuário.");
 
+            // Se o usuário não informar nenhuma role, defina como "user"
+            var roles = request.Roles?.Count > 0 ? request.Roles : ["user"];
+
+            // Atribuir roles ao usuário
+            await _userRepository.AssignRolesToUser(userId.Value, roles);
+
             return new RegisterResponseDto(userId.Value, "Usuário cadastrado com sucesso.");
         }
 
@@ -47,5 +54,26 @@ namespace Supplier.Auth.Services
 
             return LoginResponseDto.WithToken(token);
         }
+
+        public async Task<RegisterResponseDto> RegisterAdminUser(RegisterAdminRequestDto request, ClaimsPrincipal currentUser)
+        {
+            if (!currentUser.IsInRole("admin"))
+            {
+                return new RegisterResponseDto(Guid.Empty, "Apenas administradores podem criar outros administradores.");
+            }
+
+            var userExists = await _userRepository.UserExists(request.Email);
+            if (userExists == true)
+                return new RegisterResponseDto(Guid.Empty, "Usuário já cadastrado.");
+
+            var userId = await _userRepository.CreateUser(request.Email, request.Password);
+            if (userId == null || userId == Guid.Empty)
+                return new RegisterResponseDto(Guid.Empty, "Erro ao criar usuário.");
+
+            await _userRepository.AssignRolesToUser(userId.Value, new List<string> { "admin" });
+
+            return new RegisterResponseDto(userId.Value, "Usuário administrador cadastrado com sucesso.");
+        }
+
     }
 }

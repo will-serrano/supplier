@@ -1,0 +1,141 @@
+﻿using Moq;
+using Supplier.Auth.Dto.Requests;
+using Supplier.Auth.Models;
+using Supplier.Auth.Repositories.Interfaces;
+using Supplier.Auth.Services;
+using Supplier.Auth.Services.Interfaces;
+using System.Security.Claims;
+
+namespace Supplier.Auth.Tests.Services
+{
+    public class AuthServiceTests
+    {
+        private readonly Mock<IUserRepository> _userRepositoryMock;
+        private readonly Mock<IToken> _jwtServiceMock;
+        private readonly AuthService _authService;
+
+        public AuthServiceTests()
+        {
+            _userRepositoryMock = new Mock<IUserRepository>();
+            _jwtServiceMock = new Mock<IToken>();
+            _authService = new AuthService(_userRepositoryMock.Object, _jwtServiceMock.Object);
+        }
+
+        [Fact]
+        public async Task RegisterUser_UserAlreadyExists_ReturnsErrorMessage()
+        {
+            // Arrange
+            var request = new RegisterRequestDto { Email = "test@example.com", Password = "password" };
+            _userRepositoryMock.Setup(repo => repo.UserExists(request.Email)).ReturnsAsync(true);
+
+            // Act
+            var result = await _authService.RegisterUser(request);
+
+            // Assert
+            Assert.Equal(Guid.Empty, result.UserId);
+            Assert.Equal("Usuário já cadastrado.", result.Message);
+        }
+
+        [Fact]
+        public async Task RegisterUser_UserCreationFails_ReturnsErrorMessage()
+        {
+            // Arrange
+            var request = new RegisterRequestDto { Email = "test@example.com", Password = "password" };
+            _userRepositoryMock.Setup(repo => repo.UserExists(request.Email)).ReturnsAsync(false);
+            _userRepositoryMock.Setup(repo => repo.CreateUser(request.Email, request.Password)).ReturnsAsync((Guid?)null);
+
+            // Act
+            var result = await _authService.RegisterUser(request);
+
+            // Assert
+            Assert.Equal(Guid.Empty, result.UserId);
+            Assert.Equal("Erro ao criar usuário.", result.Message);
+        }
+
+        [Fact]
+        public async Task RegisterUser_UserCreationSucceeds_ReturnsSuccessMessage()
+        {
+            // Arrange
+            var request = new RegisterRequestDto { Email = "test@example.com", Password = "password" };
+            var userId = Guid.NewGuid();
+            _userRepositoryMock.Setup(repo => repo.UserExists(request.Email)).ReturnsAsync(false);
+            _userRepositoryMock.Setup(repo => repo.CreateUser(request.Email, request.Password)).ReturnsAsync(userId);
+
+            // Act
+            var result = await _authService.RegisterUser(request);
+
+            // Assert
+            Assert.Equal(userId, result.UserId);
+            Assert.Equal("Usuário cadastrado com sucesso.", result.Message);
+        }
+
+        [Fact]
+        public async Task AuthenticateUser_InvalidEmailOrPassword_ReturnsErrorMessage()
+        {
+            // Arrange
+            var request = new LoginRequestDto { Email = "test@example.com", Password = "password" };
+            _userRepositoryMock.Setup(repo => repo.GetUserByEmail(request.Email)).ReturnsAsync((User)null);
+
+            // Act
+            var result = await _authService.AuthenticateUser(request);
+
+            // Assert
+            Assert.Equal("Email ou senha inválidos.", result.Message);
+        }
+
+        [Fact]
+        public async Task AuthenticateUser_ValidEmailAndPassword_ReturnsToken()
+        {
+            // Arrange
+            var request = new LoginRequestDto { Email = "test@example.com", Password = "password" };
+            var user = new User { Id = Guid.NewGuid(), Email = request.Email, PasswordHash = "hashed_password" };
+            var roles = new List<string> { "user" };
+            var token = "generated_token";
+
+            _userRepositoryMock.Setup(repo => repo.GetUserByEmail(request.Email)).ReturnsAsync(user);
+            _userRepositoryMock.Setup(repo => repo.VerifyPassword(request.Email, request.Password)).ReturnsAsync(true);
+            _userRepositoryMock.Setup(repo => repo.GetUserRoles(user.Id)).ReturnsAsync(roles);
+            _jwtServiceMock.Setup(service => service.GenerateToken(user.Id, user.Email, roles)).Returns(token);
+
+            // Act
+            var result = await _authService.AuthenticateUser(request);
+
+            // Assert
+            Assert.Equal(token, result.Token);
+        }
+
+        [Fact]
+        public async Task RegisterAdminUser_NonAdminUser_ReturnsErrorMessage()
+        {
+            // Arrange
+            var request = new RegisterAdminRequestDto { Email = "admin@example.com", Password = "password" };
+            var currentUser = new ClaimsPrincipal(new ClaimsIdentity(new Claim[] { new Claim(ClaimTypes.Role, "user") }));
+
+            // Act
+            var result = await _authService.RegisterAdminUser(request, currentUser);
+
+            // Assert
+            Assert.Equal(Guid.Empty, result.UserId);
+            Assert.Equal("Apenas administradores podem criar outros administradores.", result.Message);
+        }
+
+        [Fact]
+        public async Task RegisterAdminUser_AdminUser_ReturnsSuccessMessage()
+        {
+            // Arrange
+            var request = new RegisterAdminRequestDto { Email = "admin@example.com", Password = "password" };
+            var currentUser = new ClaimsPrincipal(new ClaimsIdentity(new Claim[] { new Claim(ClaimTypes.Role, "admin") }));
+            var userId = Guid.NewGuid();
+
+            _userRepositoryMock.Setup(repo => repo.UserExists(request.Email)).ReturnsAsync(false);
+            _userRepositoryMock.Setup(repo => repo.CreateUser(request.Email, request.Password)).ReturnsAsync(userId);
+
+            // Act
+            var result = await _authService.RegisterAdminUser(request, currentUser);
+
+            // Assert
+            Assert.Equal(userId, result.UserId);
+            Assert.Equal("Usuário administrador cadastrado com sucesso.", result.Message);
+        }
+    }
+}

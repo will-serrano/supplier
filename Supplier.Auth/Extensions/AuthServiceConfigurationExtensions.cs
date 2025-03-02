@@ -106,8 +106,9 @@ namespace Supplier.Auth.Extensions
             });
             services.AddSingleton<JwtService>();
             services.AddScoped<IPasswordHasher<IdentityUser>, PasswordHasher<IdentityUser>>();
-            services.AddScoped<IAuthService, AuthService>();
+            services.AddScoped<IDapperWrapper, DapperWrapper>();
             services.AddScoped<IUserRepository, UserRepository>();
+            services.AddScoped<IAuthService, AuthService>();
 
             return services;
         }

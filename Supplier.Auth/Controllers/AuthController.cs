@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Supplier.Auth.Dto.Requests;
 using Supplier.Auth.Dto.Responses;
 using Supplier.Auth.Repositories;
@@ -36,6 +37,19 @@ namespace Supplier.Auth.Controllers
 
             if (response.Token == null)
                 return Unauthorized(response);
+
+            return Ok(response);
+        }
+
+        [Authorize(Roles = "admin")]
+        [HttpPost("register-admin")]
+        public async Task<IActionResult> RegisterAdmin([FromBody] RegisterAdminRequestDto request)
+        {
+            var currentUser = HttpContext.User;
+            var response = await _authService.RegisterAdminUser(request, currentUser);
+
+            if (response.UserId == Guid.Empty)
+                return BadRequest(response.Message);
 
             return Ok(response);
         }

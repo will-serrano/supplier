@@ -19,13 +19,28 @@ namespace Supplier.Auth.Services
 
         public string GenerateToken(Guid userId, string email, IEnumerable<string> roles)
         {
+            // Validação da chave JWT
+            if (string.IsNullOrWhiteSpace(_jwtSettings.Secret) || _jwtSettings.Secret.Length < 32)
+            {
+                throw new ArgumentException("Chave JWT inválida ou muito curta.", nameof(_jwtSettings.Secret));
+            }
+
+            // Validação do tempo de expiração
+            if (_jwtSettings.ExpirationMinutes <= 0)
+            {
+                throw new ArgumentException("O tempo de expiração do token deve ser maior que zero.", nameof(_jwtSettings.ExpirationMinutes));
+            }
+
             var claims = new List<Claim>
             {
-                new(JwtRegisteredClaimNames.Sub, userId.ToString()),
-                new(JwtRegisteredClaimNames.Email, email),
-                new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+                new(JwtRegisteredClaimNames.Sub, userId.ToString()), // Identificador único
+                new(ClaimTypes.NameIdentifier, userId.ToString()),  // ID do usuário
+                new(ClaimTypes.Email, email), // Email
+                new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()) // Token único
             };
 
+            // Garantindo que roles não seja nulo
+            roles ??= Enumerable.Empty<string>();
             foreach (var role in roles)
             {
                 claims.Add(new(ClaimTypes.Role, role));

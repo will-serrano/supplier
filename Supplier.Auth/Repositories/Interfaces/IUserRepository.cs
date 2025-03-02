@@ -11,5 +11,6 @@ namespace Supplier.Auth.Repositories.Interfaces
         Task<User?> GetUserByEmail(string email);
         Task<IEnumerable<string>?> GetUserRoles(Guid userId);
         Task<bool> VerifyPassword(string email, string password);
+        Task AssignRolesToUser(Guid userId, List<string> roles);
     }
 }
