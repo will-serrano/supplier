@@ -1,5 +1,5 @@
 ﻿using Rebus.Bus;
-using Supplier.Transactions.Messaging.Contracts;
+using Supplier.Contracts.Transactions;
 
 namespace Supplier.Transactions.Messaging
 {
@@ -12,7 +12,7 @@ namespace Supplier.Transactions.Messaging
             _bus = bus;
         }
 
-        public async Task Send(TransactionMessage mensagem)
+        public async Task Send(MessageWrapper mensagem)
         {
             // Envia a mensagem para a fila da API Transactions
             await _bus.Advanced.Routing.Send(RoutingKeys.TransactionsToCustomers, mensagem);

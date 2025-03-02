@@ -1,43 +1,34 @@
-﻿using Rebus.Bus;
-using Rebus.Handlers;
-using Supplier.Transactions.Messaging.Contracts;
+﻿using Rebus.Handlers;
+using Supplier.Contracts.Transactions;
+using Supplier.Contracts.Transactions.Responses;
 using Supplier.Transactions.Repositories.Interfaces;
-using System.Text.Json;
-using System.Text.Json.Serialization;
 
 namespace Supplier.Transactions.Messaging
 {
-    public class TransactionMessageHandler : IHandleMessages<TransactionMessage>
+    public class TransactionMessageHandler : IHandleMessages<MessageWrapper>
     {
         private readonly ITransactionRequestRepository _transactionRequestRepository;
-        private readonly IBus _bus;
         private readonly ILogger<TransactionMessageHandler> _logger;
-        private static readonly JsonSerializerOptions _jsonOptions = new()
-        {
-            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
-        };
 
-        public TransactionMessageHandler(ITransactionRequestRepository transactionRequestRepository, IBus bus, ILogger<TransactionMessageHandler> logger)
+        public TransactionMessageHandler(ITransactionRequestRepository transactionRequestRepository, ILogger<TransactionMessageHandler> logger)
         {
             _transactionRequestRepository = transactionRequestRepository;
-            _bus = bus;
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        public async Task Handle(TransactionMessage message)
+        public async Task Handle(MessageWrapper message)
         {
             _logger.LogInformation("Mensagem recebida: {@Message}", message);
 
-            if (string.IsNullOrWhiteSpace(message.Data))
+            if (message.Data == null)
             {
                 _logger.LogError("Mensagem recebida com dados vazios.");
                 return;
             }
 
-            if (!TryDeserializeMessage(message.Data, out var transactionData))
+            if (message.Data is not TransactionResponseMessageData transactionData)
             {
-                _logger.LogError("Falha ao desserializar a mensagem: {Data}", message.Data);
+                _logger.LogError("Falha ao converter a mensagem para TransactionResponseMessageData.");
                 return;
             }
 
@@ -48,24 +39,9 @@ namespace Supplier.Transactions.Messaging
                 return;
             }
 
-
             _logger.LogInformation("Transação finalizada: {TransactionId} - Limite Atualizado: {NewLimit}", transactionData.TransactionId, transactionData.NewLimit);
             await _transactionRequestRepository.UpdateTransactionRequestAsync(transactionData.TransactionId);
 
-        }
-
-        private static bool TryDeserializeMessage(string json, out CustomerUpdateResponseMessageData? data)
-        {
-            try
-            {
-                data = JsonSerializer.Deserialize<CustomerUpdateResponseMessageData>(json, _jsonOptions);
-                return data != null;
-            }
-            catch (JsonException)
-            {
-                data = null;
-                return false;
-            }
         }
     }
 }

@@ -1,14 +1,5 @@
-using FluentValidation;
-using FluentValidation.AspNetCore;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.IdentityModel.Tokens;
-using Rebus.Config;
 using Serilog;
-using Supplier.Customers.Configuration;
-using Supplier.Customers.Configuration.Interfaces;
-using Supplier.Customers.Messaging;
-using Supplier.Customers.Validators;
-using System.Text;
+using Supplier.Customers.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -23,67 +14,20 @@ builder.Host.UseSerilog((context, services, configuration) => configuration
     .WriteTo.Console()
 );
 
+builder.Services.ConfigureSerilogLogging(builder.Configuration);
 builder.Services.AddControllers();
-builder.Services.AddFluentValidationAutoValidation();
-builder.Services.AddValidatorsFromAssemblyContaining<CustomerRequestDtoValidator>();
-
-var jwtSettings = new JwtSettings();
-builder.Configuration.GetSection("JwtSettings").Bind(jwtSettings);
-builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSettings"));
-
-builder.Services
-    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options =>
-    {
-        options.RequireHttpsMetadata = false;
-        options.SaveToken = true;
-        options.TokenValidationParameters = new TokenValidationParameters
-        {
-            ValidateIssuer = true,
-            ValidateAudience = true,
-            ValidateLifetime = true,
-            ValidateIssuerSigningKey = true,
-            ValidIssuer = jwtSettings.Issuer,
-            ValidAudience = jwtSettings.Audience,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.Secret))
-        };
-    });
-
-builder.Services.AddAuthorization();
-
-builder.Services.AddSingleton<IDbConnectionFactory, DbConnectionFactory>();
-
-builder.Services.AddRebus(configure => configure
-    .Transport(t => t.UseRabbitMq("amqp://guest:guest@localhost", RoutingKeys.TransactionsToCustomers))
-    .Options(o =>
-    {
-        o.SetNumberOfWorkers(1);
-        // Outras opções (como política de retry) podem ser configuradas aqui
-    })
-    .Logging(l => l.Serilog())
-);
-
-builder.Services.AutoRegisterHandlersFromAssemblyOf<Program>();
-
-ConfigureServices(builder.Services);
+builder.Services.ConfigureFluentValidation();
+builder.Services.ConfigureJwtAuthentication(builder.Configuration);
+builder.Services.ConfigureDependencies();
+builder.Services.ConfigureRebusMessaging();
 
 var app = builder.Build();
 
-ConfigureMiddleware(app);
+// Configura os middlewares
+app.UseSerilogRequestLogging();
+app.UseHttpsRedirection();
+app.UseAuthentication();
+app.UseAuthorization();
+app.MapControllers();
 
 app.Run();
-
-void ConfigureServices(IServiceCollection services)
-{
-    services.AddControllers();
-}
-
-void ConfigureMiddleware(WebApplication app)
-{
-    app.UseSerilogRequestLogging();
-    app.UseHttpsRedirection();
-    app.UseAuthentication();
-    app.UseAuthorization();
-    app.UseHttpsRedirection();
-    app.MapControllers();
-}

@@ -1,23 +1,17 @@
 ﻿using Rebus.Bus;
 using Rebus.Handlers;
-using Supplier.Customers.Messaging.Contracts;
-using Supplier.Customers.Models;
+using Supplier.Contracts.Transactions;
+using Supplier.Contracts.Transactions.Requests;
+using Supplier.Contracts.Transactions.Responses;
 using Supplier.Customers.Repositories.Interfaces;
-using System.Text.Json;
-using System.Text.Json.Serialization;
 
 namespace Supplier.Customers.Messaging
 {
-    public class CustomerMessageHandler : IHandleMessages<CustomerMessage>
+    public class CustomerMessageHandler : IHandleMessages<MessageWrapper>
     {
         private readonly ICustomerRepository _customerRepository;
         private readonly IBus _bus;
         private readonly ILogger<CustomerMessageHandler> _logger;
-        private static readonly JsonSerializerOptions _jsonOptions = new()
-        {
-            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
-        };
 
         public CustomerMessageHandler(ICustomerRepository customerRepository, IBus bus, ILogger<CustomerMessageHandler> logger)
         {
@@ -26,24 +20,23 @@ namespace Supplier.Customers.Messaging
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        public async Task Handle(CustomerMessage message)
+        public async Task Handle(MessageWrapper message)
         {
             _logger.LogInformation("Mensagem recebida: {@Message}", message);
 
-            if (string.IsNullOrWhiteSpace(message.Data))
+            if (message.Data == null)
             {
                 _logger.LogError("Mensagem recebida com dados vazios.");
                 return;
             }
 
-            if (!TryDeserializeMessage(message.Data, out var transactionData))
+            if (message.Data is not TransactionRequestMessageData transactionData)
             {
-                _logger.LogError("Falha ao desserializar a mensagem: {Data}", message.Data);
+                _logger.LogError("Falha ao converter a mensagem para TransactionRequestMessageData.");
                 return;
             }
 
-            var customer = await _customerRepository.GetCustomerByIdAsync(transactionData!.CustomerId);
-
+            var customer = await _customerRepository.GetCustomerByIdAsync(transactionData.CustomerId);
             if (customer == null)
             {
                 _logger.LogError("Cliente não encontrado: {CustomerId}", transactionData.CustomerId);
@@ -64,23 +57,9 @@ namespace Supplier.Customers.Messaging
             await SendSuccessResponse(transactionData.TransactionId, customer.CreditLimit);
         }
 
-        private static bool TryDeserializeMessage(string json, out TransactionMessageData? data)
-        {
-            try
-            {
-                data = System.Text.Json.JsonSerializer.Deserialize<TransactionMessageData>(json, _jsonOptions);
-                return data != null;
-            }
-            catch (JsonException)
-            {
-                data = null;
-                return false;
-            }
-        }
-
         private async Task SendFailureResponse(Guid transactionId, string message, decimal newLimit = 0)
         {
-            var response = new CustomerUpdateResponseMessageData
+            var response = new TransactionResponseMessageData
             {
                 TransactionId = transactionId,
                 IsSuccess = false,
@@ -88,12 +67,18 @@ namespace Supplier.Customers.Messaging
                 Message = message
             };
 
-            await _bus.Advanced.Routing.Send(RoutingKeys.CustomersToTransactions, response);
+            var messageToSend = new MessageWrapper
+            {
+                Version = "V1",
+                Data = response
+            };
+
+            await _bus.Advanced.Routing.Send(RoutingKeys.CustomersToTransactions, messageToSend);
         }
 
         private async Task SendSuccessResponse(Guid transactionId, decimal newLimit)
         {
-            var responseData = new CustomerUpdateResponseMessageData
+            var responseData = new TransactionResponseMessageData
             {
                 TransactionId = transactionId,
                 IsSuccess = true,
@@ -101,10 +86,10 @@ namespace Supplier.Customers.Messaging
                 Message = "Limite atualizado com sucesso."
             };
 
-            var messageToSend = new TransactionMessage
+            var messageToSend = new MessageWrapper
             {
                 Version = "V1",
-                Data = JsonSerializer.Serialize(responseData, _jsonOptions)
+                Data = responseData
             };
 
             await _bus.Advanced.Routing.Send(RoutingKeys.CustomersToTransactions, messageToSend);

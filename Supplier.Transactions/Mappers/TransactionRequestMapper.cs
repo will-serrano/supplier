@@ -1,19 +1,19 @@
-﻿using Supplier.Transactions.Dto.Requests;
+﻿using Supplier.Contracts.Transactions.Requests;
+using Supplier.Transactions.Dto.Requests;
 using Supplier.Transactions.Mappers.Interfaces;
-using Supplier.Transactions.Messaging.Contracts;
 using Supplier.Transactions.Models;
 
 namespace Supplier.Transactions.Mappers
 {
     public class TransactionRequestMapper : ITransactionRequestMapper
     {
-        public TransactionMessageData MapToTransactionMessageData(TransactionRequest transactionRequest)
+        public TransactionRequestMessageData MapToTransactionMessageData(TransactionRequest transactionRequest)
         {
-            return new TransactionMessageData
+            return new TransactionRequestMessageData
             {
                 Amount = transactionRequest.Amount,
                 CustomerId = transactionRequest.CustomerId,
-                TransactionId = transactionRequest.TransactionId,
+                TransactionId = transactionRequest.TransactionId
             };
         }
 
@@ -21,8 +21,8 @@ namespace Supplier.Transactions.Mappers
         {
             return new TransactionRequest
             {
-                CustomerId = Guid.Parse(request.CustomerId),
-                Amount = request.Amount,
+                CustomerId = request.CustomerId != null ? Guid.Parse(request.CustomerId) : Guid.Empty,
+                Amount = request.Amount ?? 0,
                 RequestedBy = request.UserId ?? string.Empty,
             };
         }
