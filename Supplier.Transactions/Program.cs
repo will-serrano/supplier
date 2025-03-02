@@ -17,7 +17,7 @@ builder.Services
     .ConfigureHttpClients(builder.Configuration)
     .ConfigureFluentValidation()
     .ConfigureJwtAuthentication(builder.Configuration)
-    .ConfigureDependencies()
+    .ConfigureDependencies(builder.Configuration)
     .ConfigureFluentMigrator(builder.Configuration)
     .ConfigureControllers()
     .ConfigureRebusMessaging();

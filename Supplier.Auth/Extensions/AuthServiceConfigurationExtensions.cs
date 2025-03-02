@@ -11,6 +11,8 @@ using Supplier.Auth.Services;
 using System.Text;
 using Supplier.Auth.Configuration.Interfaces;
 using Supplier.Auth.Configuration;
+using Microsoft.Data.Sqlite;
+using System.Data;
 
 namespace Supplier.Auth.Extensions
 {
@@ -20,6 +22,7 @@ namespace Supplier.Auth.Extensions
         {
             Log.Logger = new LoggerConfiguration()
                 .ReadFrom.Configuration(configuration)
+                .WriteTo.Seq("http://localhost:5341")
                 .CreateLogger();
 
             // Configuração adicional, se necessário, pode ser incluída aqui.
@@ -52,11 +55,16 @@ namespace Supplier.Auth.Extensions
             return services;
         }
 
-        public static IServiceCollection ConfigureDependencies(this IServiceCollection services)
+        public static IServiceCollection ConfigureDependencies(this IServiceCollection services, IConfiguration configuration)
         {
             // Registra as dependências da aplicação
             services.AddSingleton<IToken, JwtService>();
             services.AddSingleton<IDbConnectionFactory, DbConnectionFactory>();
+            services.AddScoped<IDbConnection>(sp =>
+            {
+                var connectionString = ConnectionStringHelper.GetSqliteConnectionString(configuration);
+                return new SqliteConnection(connectionString);
+            });
             services.AddSingleton<JwtService>();
             services.AddScoped<IPasswordHasher<IdentityUser>, PasswordHasher<IdentityUser>>();
             services.AddScoped<IAuthService, AuthService>();

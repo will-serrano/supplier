@@ -16,7 +16,7 @@ builder.Services
     .ConfigureSerilogLogging(builder.Configuration)
     .ConfigureFluentValidation()
     .ConfigureJwtAuthentication(builder.Configuration)
-    .ConfigureDependencies()
+    .ConfigureDependencies(builder.Configuration)
     .ConfigureFluentMigrator(builder.Configuration)
     .ConfigureControllers()
     .ConfigureRebusMessaging();

@@ -2,11 +2,13 @@
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Polly;
 using Polly.Extensions.Http;
 using Rebus.Config;
+using Rebus.Serialization;
 using Serilog;
 using Supplier.Transactions.Configuration;
 using Supplier.Transactions.Configuration.Interfaces;
@@ -22,6 +24,7 @@ using Supplier.Transactions.Repositories.Interfaces;
 using Supplier.Transactions.Services;
 using Supplier.Transactions.Services.Interfaces;
 using Supplier.Transactions.Validators;
+using System.Data;
 using System.Text;
 
 namespace Supplier.Transactions.Extensions
@@ -32,6 +35,7 @@ namespace Supplier.Transactions.Extensions
         {
             Log.Logger = new LoggerConfiguration()
                 .ReadFrom.Configuration(configuration)
+                .WriteTo.Seq("http://localhost:5341")
                 .CreateLogger();
 
             // Configuração adicional, se necessário, pode ser incluída aqui.
@@ -131,13 +135,21 @@ namespace Supplier.Transactions.Extensions
             return services;
         }
 
-        public static IServiceCollection ConfigureDependencies(this IServiceCollection services)
+        public static IServiceCollection ConfigureDependencies(this IServiceCollection services, IConfiguration configuration)
         {
             services.AddSingleton<IDbConnectionFactory, DbConnectionFactory>();
+            services.AddSingleton<ISerializer, RebusMessageSerializer>();
+
+            services.AddScoped<IDbConnection>(sp =>
+            {
+                var connectionString = ConnectionStringHelper.GetSqliteConnectionString(configuration);
+                return new SqliteConnection(connectionString);
+            });
             services.AddTransient<ITransactionRequestService, TransactionRequestService>();
             services.AddTransient<ITransactionRequestRepository, TransactionRequestRepository>();
             services.AddTransient<ITransactionRequestMapper, TransactionRequestMapper>();
             services.AddTransient<IValidator<TransactionRequestDto>, TransactionRequestDtoValidator>();
+            services.AddScoped<CustomerMessagePublisher>();
             return services;
         }
 

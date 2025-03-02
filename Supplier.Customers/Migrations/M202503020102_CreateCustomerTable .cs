@@ -10,8 +10,8 @@ namespace Supplier.Customers.Migrations
         {
             Create.Table("Customers")
                 .WithColumn("Id").AsGuid().PrimaryKey()
-                .WithColumn("Name").AsString(255).Nullable()
-                .WithColumn("Cpf").AsString(14).Nullable()
+                .WithColumn("Name").AsString(255).NotNullable()
+                .WithColumn("Cpf").AsString(14).NotNullable()
                 .WithColumn("CreditLimit").AsDecimal().NotNullable();
         }
 

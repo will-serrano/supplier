@@ -15,7 +15,7 @@ builder.Host.UseSerilog((context, services, configuration) => configuration
 builder.Services
     .ConfigureSerilogLogging(builder.Configuration)
     .ConfigureJwtAuthentication(builder.Configuration)
-    .ConfigureDependencies()
+    .ConfigureDependencies(builder.Configuration)
     .ConfigureFluentMigrator(builder.Configuration)
     .ConfigureControllers();
 

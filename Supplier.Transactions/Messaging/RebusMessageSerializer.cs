@@ -1,10 +1,10 @@
 ﻿using Rebus.Messages;
 using Rebus.Serialization;
-using Supplier.Contracts.Transactions;
-using System.Text;
 using System.Text.Json;
+using System.Text;
+using Supplier.Contracts.Transactions;
 
-namespace Supplier.Customers.Messaging
+namespace Supplier.Transactions.Messaging
 {
     public class RebusMessageSerializer : ISerializer
     {

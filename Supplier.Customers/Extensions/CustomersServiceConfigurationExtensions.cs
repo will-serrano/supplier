@@ -2,8 +2,10 @@
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.Data.Sqlite;
 using Microsoft.IdentityModel.Tokens;
 using Rebus.Config;
+using Rebus.Serialization;
 using Serilog;
 using Supplier.Customers.Configuration;
 using Supplier.Customers.Configuration.Interfaces;
@@ -12,6 +14,7 @@ using Supplier.Customers.Messaging;
 using Supplier.Customers.Repositories;
 using Supplier.Customers.Repositories.Interfaces;
 using Supplier.Customers.Validators;
+using System.Data;
 using System.Text;
 
 namespace Supplier.Customers.Extensions
@@ -22,6 +25,7 @@ namespace Supplier.Customers.Extensions
         {
             Log.Logger = new LoggerConfiguration()
                 .ReadFrom.Configuration(configuration)
+                .WriteTo.Seq("http://localhost:5341")
                 .CreateLogger();
 
             // Configuração adicional, se necessário, pode ser incluída aqui.
@@ -84,11 +88,18 @@ namespace Supplier.Customers.Extensions
             return services;
         }
 
-        public static IServiceCollection ConfigureDependencies(this IServiceCollection services)
+        public static IServiceCollection ConfigureDependencies(this IServiceCollection services, IConfiguration configuration)
         {
-            services.AddSingleton<Rebus.Serialization.ISerializer, RebusMessageSerializer>();
             services.AddSingleton<IDbConnectionFactory, DbConnectionFactory>();
+            services.AddSingleton<ISerializer, RebusMessageSerializer>();
+            services.AddSingleton<IDbConnectionFactory, DbConnectionFactory>();
+            services.AddScoped<IDbConnection>(sp =>
+            {
+                var connectionString = ConnectionStringHelper.GetSqliteConnectionString(configuration);
+                return new SqliteConnection(connectionString);
+            });
             services.AddScoped<ICustomerRepository, CustomerRepository>();
+            services.AddScoped<CustomerMessageHandler>();
             return services;
         }
 
