@@ -140,6 +140,7 @@ namespace Supplier.Customers.Extensions
                 return new SqliteConnection(connectionString);
             });
             services.AddScoped<ICustomerRepository, CustomerRepository>();
+            services.AddScoped<IDapperWrapper, DapperWrapper>();
             services.AddScoped<CustomerMessageHandler>();
             return services;
         }

@@ -20,6 +20,7 @@ using Supplier.Transactions.HttpClients.Interfaces;
 using Supplier.Transactions.Mappers;
 using Supplier.Transactions.Mappers.Interfaces;
 using Supplier.Transactions.Messaging;
+using Supplier.Transactions.Messaging.Interfaces;
 using Supplier.Transactions.Repositories;
 using Supplier.Transactions.Repositories.Interfaces;
 using Supplier.Transactions.Services;
@@ -178,7 +179,7 @@ namespace Supplier.Transactions.Extensions
                 c.IncludeXmlComments(xmlPath);
             });
             services.AddSingleton<IDbConnectionFactory, DbConnectionFactory>();
-            //services.AddSingleton<ISerializer, RebusMessageSerializer>();
+            services.AddSingleton<ISerializer, RebusMessageSerializer>();
             services.AddScoped<IDbConnection>(sp =>
             {
                 var connectionString = ConnectionStringHelper.GetSqliteConnectionString(configuration);
@@ -188,6 +189,8 @@ namespace Supplier.Transactions.Extensions
             services.AddTransient<ITransactionRequestRepository, TransactionRequestRepository>();
             services.AddTransient<ITransactionRequestMapper, TransactionRequestMapper>();
             services.AddTransient<IValidator<TransactionRequestDto>, TransactionRequestDtoValidator>();
+            services.AddScoped<ICustomerMessagePublisher, CustomerMessagePublisher>();
+            services.AddScoped<IDapperWrapper, DapperWrapper>();
             services.AddScoped<CustomerMessagePublisher>();
             return services;
         }
