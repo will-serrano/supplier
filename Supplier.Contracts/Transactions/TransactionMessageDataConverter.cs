@@ -12,10 +12,10 @@ namespace Supplier.Contracts.Transactions
     public class TransactionMessageDataConverter : JsonConverter<ITransactionMessageData>
     {
         private static readonly Dictionary<string, Type> TypeMap = new()
-                {
-                    { nameof(TransactionRequestMessageData), typeof(TransactionRequestMessageData) },
-                    { nameof(TransactionResponseMessageData), typeof(TransactionResponseMessageData) }
-                };
+            {
+                { nameof(TransactionRequestMessageData), typeof(TransactionRequestMessageData) },
+                { nameof(TransactionResponseMessageData), typeof(TransactionResponseMessageData) }
+            };
 
         /// <summary>
         /// Reads and converts the JSON to <see cref="ITransactionMessageData"/>.
@@ -55,7 +55,7 @@ namespace Supplier.Contracts.Transactions
         /// </summary>
         /// <param name="writer">The writer.</param>
         /// <param name="value">The value to write.</param>
-        /// <param name="options">The serializer options.</param>
+        /// <param="options">The serializer options.</param>
         public override void Write(Utf8JsonWriter writer, ITransactionMessageData value, JsonSerializerOptions options)
         {
             writer.WriteStartObject();

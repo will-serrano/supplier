@@ -43,43 +43,27 @@ namespace Supplier.Transactions.Controllers
         {
             if (request == null)
             {
-                _logger.LogWarning("Request cannot be null");
                 return BadRequest("Request cannot be null");
             }
 
             var token = HttpContext.Request.Headers["Authorization"].ToString().Replace("Bearer ", "");
-            if (string.IsNullOrEmpty(token))
+            var (isValid, errorMessage, userGuid) = await _transactionService.ValidateRequest(request, token);
+
+            if (!isValid)
             {
-                _logger.LogWarning("Authorization token is missing or empty");
-                return Unauthorized("Authorization token is missing or empty");
+                _logger.LogWarning(errorMessage);
+                return BadRequest(errorMessage);
             }
 
-            var jwtToken = _tokenHandlerWrapper.ReadJwtToken(token);
-            var userIdClaim = jwtToken.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier || c.Type == "sub");
-            var userId = string.Empty;
-            if (userIdClaim != null)
+            if (userGuid == Guid.Empty)
             {
-                userId = userIdClaim.Value;
-            }
-
-            if (string.IsNullOrEmpty(userId))
-            {
-                _logger.LogWarning("User ID not found");
                 return Unauthorized("User ID not found");
             }
-
-            if (!Guid.TryParse(userId, out var userGuid))
-            {
-                _logger.LogWarning("Invalid User ID format: {UserId}", userId);
-                return BadRequest("Invalid User ID format");
-            }
-
-            request.UserId = userGuid;
 
             try
             {
                 _logger.LogInformation("Simulating transaction for User ID: {UserId}", userGuid);
-                var resultado = await _transactionService.RequestTransactionAsync(request, token);
+                var resultado = await _transactionService.RequestTransactionAsync(request, userGuid, token);
                 if (resultado == null)
                 {
                     _logger.LogError("An error occurred while processing the transaction for User ID: {UserId}", userGuid);

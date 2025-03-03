@@ -3,8 +3,14 @@ using Moq;
 using Rebus.Bus;
 using Rebus.Bus.Advanced;
 using Supplier.Contracts.Transactions;
+using Supplier.Contracts.Transactions.Enums;
 using Supplier.Contracts.Transactions.Interfaces;
+using Supplier.Contracts.Transactions.Requests;
+using Supplier.Contracts.Transactions.Responses;
 using Supplier.Transactions.Messaging;
+using Supplier.Transactions.Messaging.Interfaces;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace Supplier.Transactions.Tests.Messaging
 {
@@ -14,7 +20,7 @@ namespace Supplier.Transactions.Tests.Messaging
         private readonly Mock<IAdvancedApi> _advancedBusMock;
         private readonly Mock<IRoutingApi> _routingBusMock;
         private readonly Mock<ILogger<CustomerMessagePublisher>> _loggerMock;
-        private readonly CustomerMessagePublisher _publisher;
+        private readonly ICustomerMessagePublisher _publisher;
 
         public CustomerMessagePublisherTests()
         {
@@ -33,7 +39,18 @@ namespace Supplier.Transactions.Tests.Messaging
         public async Task Send_ValidMessage_LogsInformationAndSendsMessage()
         {
             // Arrange
-            var message = new MessageWrapper { Version = "1.0", Data = new Mock<ITransactionMessageData>().Object };
+            var message = new MessageWrapper
+            {
+                Version = "1.0",
+                Data = new TransactionResponseMessageData // Use a concrete implementation
+                {
+                    TransactionId = Guid.NewGuid(),
+                    IsSuccess = true,
+                    NewLimit = 5000.0m,
+                    Message = "Success"
+                },
+                Type = MessageType.TransactionRequestMessageData
+            };
 
             // Act
             await _publisher.Send(message);
@@ -42,11 +59,40 @@ namespace Supplier.Transactions.Tests.Messaging
             _loggerMock.Verify(logger => logger.Log(
                 LogLevel.Information,
                 It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((v, t) => v.ToString().Contains("Sending message to the customer queue.")),
+                It.Is<It.IsAnyType>((v, t) => v != null && v.ToString().Contains("Serialized message:")),
                 null,
-                It.IsAny<Func<It.IsAnyType, Exception, string>>()), Times.Once);
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()), Times.Once);
 
             _routingBusMock.Verify(routing => routing.Send(RoutingKeys.TransactionsToCustomers, message, null), Times.Once);
+        }
+
+        [Fact]
+        public void Serialize_MessageWrapper_DetectsCycle()
+        {
+            // Arrange
+            var message = new MessageWrapper
+            {
+                Version = "1.0",
+                Data = new TransactionRequestMessageData // Use a concrete implementation
+                {
+                    Amount = 100.0m,
+                    CustomerId = Guid.NewGuid(),
+                    TransactionId = Guid.NewGuid()
+                },
+                Type = MessageType.TransactionRequestMessageData
+            };
+
+            var options = new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                WriteIndented = true,
+                ReferenceHandler = ReferenceHandler.Preserve,
+                Converters = { new TransactionMessageDataConverter() }
+            };
+
+            // Act & Assert
+            var exception = Record.Exception(() => JsonSerializer.Serialize(message, options));
+            Assert.Null(exception);
         }
     }
 }

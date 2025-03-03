@@ -1,6 +1,7 @@
 ﻿using Dapper;
 using Microsoft.AspNetCore.Identity;
 using Supplier.Auth.Configuration.Interfaces;
+using Supplier.Auth.Dto.Responses;
 using Supplier.Auth.Models;
 using Supplier.Auth.Repositories.Interfaces;
 using System.Data;
@@ -191,6 +192,37 @@ namespace Supplier.Auth.Repositories
             {
                 await _dapperWrapper.ExecuteAsync(connection, new CommandDefinition("INSERT INTO UserRoles (UserId, RoleId) VALUES (@UserId, @RoleId)", new { UserId = userId, RoleId = role.Id }));
             }
+        }
+
+        public async Task<IEnumerable<UserResponseDto>> GetAllUsers()
+        {
+            using var connection = _dbConnectionFactory.CreateConnection();
+            if (connection == null)
+            {
+                _logger.LogError("Failed to create a connection to the database.");
+                return Enumerable.Empty<UserResponseDto>();
+            }
+
+            return await _dapperWrapper.QueryAsync<UserResponseDto>(connection, new CommandDefinition("SELECT Id, Email FROM Users"));
+        }
+
+        public async Task<bool> IsUserInRole(Guid userId, string role)
+        {
+            using var connection = _dbConnectionFactory.CreateConnection();
+            if (connection == null)
+            {
+                _logger.LogError("Failed to create a connection to the database.");
+                return false;
+            }
+
+            var query = @"
+            SELECT COUNT(1) 
+            FROM UserRoles ur
+            INNER JOIN Roles r ON ur.RoleId = r.Id
+            WHERE ur.UserId = @UserId AND r.Name = @Role";
+
+            var result = await _dapperWrapper.ExecuteScalarAsync<int>(connection, new CommandDefinition(query, new { UserId = userId, Role = role }));
+            return result > 0;
         }
     }
 }

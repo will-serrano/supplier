@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Logging;
 using Moq;
 using Rebus.Bus;
 using Rebus.Bus.Advanced;
@@ -8,7 +9,6 @@ using Supplier.Contracts.Transactions.Requests;
 using Supplier.Customers.Messaging;
 using Supplier.Customers.Models;
 using Supplier.Customers.Repositories.Interfaces;
-using System.Linq;
 
 namespace Supplier.Customers.Tests.Messaging
 {
@@ -17,6 +17,7 @@ namespace Supplier.Customers.Tests.Messaging
         private readonly Mock<ICustomerRepository> _customerRepositoryMock;
         private readonly Mock<IBus> _busMock;
         private readonly Mock<ILogger<CustomerMessageHandler>> _loggerMock;
+        private readonly Mock<IMemoryCache> _customerCacheMock;
         private readonly CustomerMessageHandler _handler;
 
         public CustomerMessageHandlerTests()
@@ -24,7 +25,8 @@ namespace Supplier.Customers.Tests.Messaging
             _customerRepositoryMock = new Mock<ICustomerRepository>();
             _busMock = new Mock<IBus>();
             _loggerMock = new Mock<ILogger<CustomerMessageHandler>>();
-            _handler = new CustomerMessageHandler(_customerRepositoryMock.Object, _busMock.Object, _loggerMock.Object);
+            _customerCacheMock = new Mock<IMemoryCache>();
+            _handler = new CustomerMessageHandler(_customerRepositoryMock.Object, _busMock.Object, _loggerMock.Object, _customerCacheMock.Object);
         }
 
         [Fact]
@@ -90,7 +92,6 @@ namespace Supplier.Customers.Tests.Messaging
                 It.Is<Func<It.IsAnyType, Exception?, string>>((v, t) => true)),
                 Times.Once);
 
-            //_loggerMock.Verify(logger => logger.LogError("Cliente não encontrado: {CustomerId}", transactionData.CustomerId), Times.Once);
             _busMock.Verify(bus => bus.Advanced.Routing.Send(It.IsAny<string>(), It.IsAny<MessageWrapper>(), null), Times.Once);
         }
 

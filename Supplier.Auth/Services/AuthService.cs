@@ -84,8 +84,19 @@ namespace Supplier.Auth.Services
         /// <returns>A task that represents the asynchronous operation. The task result contains the registration response.</returns>
         public async Task<RegisterResponseDto> RegisterAdminUser(RegisterAdminRequestDto request, ClaimsPrincipal currentUser)
         {
-            if (!currentUser.IsInRole("admin"))
+            var adminIdClaim = currentUser.FindFirst(ClaimTypes.NameIdentifier);
+            if (adminIdClaim == null)
             {
+                _logger.LogWarning("Current user is not authenticated.");
+                return new RegisterResponseDto(Guid.Empty, "Current user is not authenticated.");
+            }
+
+            var adminId = Guid.Parse(adminIdClaim.Value);
+            var isAdmin = await _userRepository.IsUserInRole(adminId, "admin");
+
+            if (!isAdmin)
+            {
+                _logger.LogWarning("Only administrators can create other administrators.");
                 return new RegisterResponseDto(Guid.Empty, "Only administrators can create other administrators.");
             }
 
@@ -100,6 +111,31 @@ namespace Supplier.Auth.Services
             await _userRepository.AssignRolesToUser(userId.Value, new List<string> { "admin" });
 
             return new RegisterResponseDto(userId.Value, "Admin user successfully registered.");
+        }
+
+        /// <summary>
+        /// Retrieves all users.
+        /// </summary>
+        /// <returns>A task that represents the asynchronous operation. The task result contains a list of user responses.</returns>
+        public async Task<IEnumerable<UserResponseDto>> GetAllUsers(ClaimsPrincipal currentUser)
+        {
+            var adminIdClaim = currentUser.FindFirst(ClaimTypes.NameIdentifier);
+            if (adminIdClaim == null)
+            {
+                _logger.LogWarning("Current user is not authenticated.");
+                return Enumerable.Empty<UserResponseDto>();
+            }
+
+            var adminId = Guid.Parse(adminIdClaim.Value);
+            var isAdmin = await _userRepository.IsUserInRole(adminId, "admin");
+
+            if (!isAdmin)
+            {
+                _logger.LogWarning("Only administrators can retrieve all users.");
+                return Enumerable.Empty<UserResponseDto>();
+            }
+
+            return await _userRepository.GetAllUsers();
         }
     }
 }

@@ -4,7 +4,6 @@ using Moq;
 using Supplier.Auth.Controllers;
 using Supplier.Auth.Dto.Requests;
 using Supplier.Auth.Dto.Responses;
-using Supplier.Auth.Repositories;
 using Supplier.Auth.Services.Interfaces;
 
 namespace Supplier.Auth.Tests.Controllers

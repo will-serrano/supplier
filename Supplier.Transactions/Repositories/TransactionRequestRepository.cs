@@ -29,6 +29,30 @@ namespace Supplier.Transactions.Repositories
         }
 
         /// <summary>
+        /// Checks if a customer is blocked asynchronously.
+        /// </summary>
+        /// <param name="customerId">The GUID of the customer.</param>
+        /// <returns>True if the customer is blocked, otherwise false.</returns>
+        public async Task<bool> IsCustomerBlockedAsync(string customerId)
+        {
+            _logger.LogInformation("Checking if customer is blocked: {CustomerId}", customerId);
+
+            const string query = @"SELECT EXISTS (
+                                        SELECT 1 FROM TransactionRequests 
+                                         WHERE CustomerId = @CustomerId 
+                                           AND CustomerBlocked = 1) AS HasBlocked";
+
+            using var connection = _dbConnectionFactory.CreateConnection();
+            if (connection == null)
+            {
+                throw new InvalidOperationException("Database connection could not be established.");
+            }
+            var result = await _dapperWrapper.QueryFirstOrDefaultAsync<int>(connection, new CommandDefinition(query, new { CustomerId = customerId }));
+
+            return result == 1;
+        }
+
+        /// <summary>
         /// Registers a new transaction request asynchronously.
         /// </summary>
         /// <param name="transaction">The transaction request to register.</param>
@@ -108,7 +132,8 @@ namespace Supplier.Transactions.Repositories
             const string updateStatusQuery = @"
                             UPDATE TransactionRequests 
                             SET Status = @Status, 
-                                UpdatedAt = @UpdatedAt 
+                                UpdatedAt = @UpdatedAt ,
+                                CustomerBlocked = @CustomerBlocked
                             WHERE TransactionId = @TransactionId;";
 
             using var connection = _dbConnectionFactory.CreateConnection();
@@ -116,7 +141,8 @@ namespace Supplier.Transactions.Repositories
             {
                 TransactionId = transactionId,
                 Status = TransactionStatus.Completed,
-                UpdatedAt = DateTime.UtcNow
+                UpdatedAt = DateTime.UtcNow,
+                CustomerBlocked = 0
             }));
 
             _logger.LogInformation("Transaction request status updated to Completed: {TransactionId}", transactionId);
@@ -135,7 +161,8 @@ namespace Supplier.Transactions.Repositories
                             UPDATE TransactionRequests 
                             SET Status = @Status, 
                                 UpdatedAt = @UpdatedAt, 
-                                Detail = @Detail 
+                                Detail = @Detail,
+                                CustomerBlocked = @CustomerBlocked
                             WHERE Id = @TransactionId;";
 
             using var connection = _dbConnectionFactory.CreateConnection();
@@ -144,7 +171,8 @@ namespace Supplier.Transactions.Repositories
                 TransactionId = transactionId.ToString(),
                 Status = TransactionStatus.Failed,
                 UpdatedAt = DateTime.UtcNow,
-                Detail = message
+                Detail = message,
+                CustomerBlocked = 0
             }));
 
             _logger.LogInformation("Transaction request status updated to Failed: {TransactionId}", transactionId);

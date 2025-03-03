@@ -36,7 +36,6 @@ namespace Supplier.Transactions.Mappers
             {
                 CustomerId = string.IsNullOrEmpty(request.CustomerId) ? Guid.Empty : Guid.Parse(request.CustomerId),
                 Amount = request.Amount.GetValueOrDefault(),
-                RequestedBy = request.UserId.HasValue ? request.UserId.Value.ToString() : string.Empty,
             };
         }
     }

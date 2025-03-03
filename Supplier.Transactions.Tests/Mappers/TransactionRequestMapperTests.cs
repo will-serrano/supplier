@@ -1,11 +1,6 @@
 ﻿using Supplier.Transactions.Dto.Requests;
 using Supplier.Transactions.Mappers;
 using Supplier.Transactions.Models;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Supplier.Transactions.Tests.Mappers
 {
@@ -45,8 +40,7 @@ namespace Supplier.Transactions.Tests.Mappers
             var requestDto = new TransactionRequestDto
             {
                 CustomerId = Guid.NewGuid().ToString(),
-                Amount = 200.75m,
-                UserId = Guid.NewGuid()
+                Amount = 200.75m
             };
 
             // Act
@@ -55,7 +49,6 @@ namespace Supplier.Transactions.Tests.Mappers
             // Assert
             Assert.Equal(Guid.Parse(requestDto.CustomerId), result.CustomerId);
             Assert.Equal(requestDto.Amount.GetValueOrDefault(), result.Amount);
-            Assert.Equal(requestDto.UserId.ToString(), result.RequestedBy);
         }
 
         [Fact]
@@ -65,8 +58,7 @@ namespace Supplier.Transactions.Tests.Mappers
             var requestDto = new TransactionRequestDto
             {
                 CustomerId = null,
-                Amount = 200.75m,
-                UserId = Guid.NewGuid()
+                Amount = 200.75m
             };
 
             // Act
@@ -75,7 +67,6 @@ namespace Supplier.Transactions.Tests.Mappers
             // Assert
             Assert.Equal(Guid.Empty, result.CustomerId);
             Assert.Equal(requestDto.Amount.GetValueOrDefault(), result.Amount);
-            Assert.Equal(requestDto.UserId.ToString(), result.RequestedBy);
         }
 
         [Fact]
@@ -85,8 +76,7 @@ namespace Supplier.Transactions.Tests.Mappers
             var requestDto = new TransactionRequestDto
             {
                 CustomerId = Guid.NewGuid().ToString(),
-                Amount = null,
-                UserId = Guid.NewGuid()
+                Amount = null
             };
 
             // Act
@@ -95,7 +85,6 @@ namespace Supplier.Transactions.Tests.Mappers
             // Assert
             Assert.Equal(Guid.Parse(requestDto.CustomerId), result.CustomerId);
             Assert.Equal(0, result.Amount);
-            Assert.Equal(requestDto.UserId.ToString(), result.RequestedBy);
         }
 
         [Fact]
@@ -105,8 +94,7 @@ namespace Supplier.Transactions.Tests.Mappers
             var requestDto = new TransactionRequestDto
             {
                 CustomerId = Guid.NewGuid().ToString(),
-                Amount = 200.75m,
-                UserId = null
+                Amount = 200.75m
             };
 
             // Act
@@ -115,7 +103,6 @@ namespace Supplier.Transactions.Tests.Mappers
             // Assert
             Assert.Equal(Guid.Parse(requestDto.CustomerId), result.CustomerId);
             Assert.Equal(requestDto.Amount.GetValueOrDefault(), result.Amount);
-            Assert.Equal(string.Empty, result.RequestedBy);
         }
     }
 }

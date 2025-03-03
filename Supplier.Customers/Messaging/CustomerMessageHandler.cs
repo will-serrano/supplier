@@ -1,4 +1,5 @@
-﻿using Rebus.Bus;
+﻿using Microsoft.Extensions.Caching.Memory;
+using Rebus.Bus;
 using Rebus.Handlers;
 using Supplier.Contracts.Transactions;
 using Supplier.Contracts.Transactions.Requests;
@@ -15,6 +16,7 @@ namespace Supplier.Customers.Messaging
         private readonly ICustomerRepository _customerRepository;
         private readonly IBus _bus;
         private readonly ILogger<CustomerMessageHandler> _logger;
+        private readonly IMemoryCache _customerCache;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CustomerMessageHandler"/> class.
@@ -22,11 +24,12 @@ namespace Supplier.Customers.Messaging
         /// <param name="customerRepository">The customer repository.</param>
         /// <param name="bus">The bus.</param>
         /// <param name="logger">The logger.</param>
-        public CustomerMessageHandler(ICustomerRepository customerRepository, IBus bus, ILogger<CustomerMessageHandler> logger)
+        public CustomerMessageHandler(ICustomerRepository customerRepository, IBus bus, ILogger<CustomerMessageHandler> logger, IMemoryCache customerCache)
         {
             _customerRepository = customerRepository ?? throw new ArgumentNullException(nameof(customerRepository));
             _bus = bus ?? throw new ArgumentNullException(nameof(bus));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _customerCache = customerCache ?? throw new ArgumentNullException(nameof(customerCache));
         }
 
         /// <summary>
@@ -64,7 +67,8 @@ namespace Supplier.Customers.Messaging
                 return;
             }
 
-            //FIX! LIMPAR CACHE
+            _customerCache.Remove("customers"); // Invalidate cache when a new customer is updated
+            _logger.LogInformation("Cleaning cache for customers");
 
             await _customerRepository.UpdateCustomerAsync(customer);
             _logger.LogInformation("Customer limit {CustomerId} updated to {NewLimit}", customer.Id, customer.CreditLimit);

@@ -57,6 +57,9 @@ namespace Supplier.Transactions.Tests.Controllers
             _mockTokenHandlerWrapper.Setup(handler => handler.ReadJwtToken(token))
                 .Returns(new JwtSecurityToken());
 
+            _mockTransactionService.Setup(service => service.ValidateRequest(request, token))
+                .ReturnsAsync((true, string.Empty, Guid.Empty));
+
             // Act
             var result = await _controller.RequestTransaction(request);
 
@@ -70,19 +73,22 @@ namespace Supplier.Transactions.Tests.Controllers
         {
             // Arrange
             var request = new TransactionRequestDto();
-            var userId = Guid.NewGuid().ToString();
+            var userId = Guid.NewGuid();
             var response = new TransactionResponseDto { Status = "Success", TransactionId = Guid.NewGuid() };
             var token = "sample-token"; // Mock token for testing
 
             var claims = new List<Claim>
             {
-                new Claim(ClaimTypes.NameIdentifier, userId)
+                new Claim(ClaimTypes.NameIdentifier, userId.ToString())
             };
             var jwtToken = new JwtSecurityToken(claims: claims);
 
             _mockTokenHandlerWrapper.Setup(handler => handler.ReadJwtToken(token)).Returns(jwtToken);
 
-            _mockTransactionService.Setup(service => service.RequestTransactionAsync(request, token))
+            _mockTransactionService.Setup(service => service.ValidateRequest(request, token))
+                .ReturnsAsync((true, string.Empty, userId));
+
+            _mockTransactionService.Setup(service => service.RequestTransactionAsync(request, userId, token))
                 .ReturnsAsync(response);
 
             _controller.ControllerContext = new ControllerContext
@@ -107,18 +113,21 @@ namespace Supplier.Transactions.Tests.Controllers
         {
             // Arrange
             var request = new TransactionRequestDto();
-            var userId = Guid.NewGuid().ToString();
+            var userId = Guid.NewGuid();
             var token = "sample-token"; // Mock token for testing
 
             var claims = new List<Claim>
-                {
-                    new Claim(ClaimTypes.NameIdentifier, userId)
-                };
+            {
+                new Claim(ClaimTypes.NameIdentifier, userId.ToString())
+            };
             var jwtToken = new JwtSecurityToken(claims: claims);
 
             _mockTokenHandlerWrapper.Setup(handler => handler.ReadJwtToken(token)).Returns(jwtToken);
 
-            _mockTransactionService.Setup(service => service.RequestTransactionAsync(request, token))
+            _mockTransactionService.Setup(service => service.ValidateRequest(request, token))
+                .ReturnsAsync((true, string.Empty, userId));
+
+            _mockTransactionService.Setup(service => service.RequestTransactionAsync(request, userId, token))
                 .ThrowsAsync(new Exception());
 
             _controller.ControllerContext = new ControllerContext

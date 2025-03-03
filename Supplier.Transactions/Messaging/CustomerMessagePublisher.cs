@@ -2,6 +2,7 @@
 using Supplier.Contracts.Transactions;
 using Supplier.Transactions.Messaging.Interfaces;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace Supplier.Transactions.Messaging
 {
@@ -35,6 +36,7 @@ namespace Supplier.Transactions.Messaging
             {
                 PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
                 WriteIndented = true,
+                ReferenceHandler = ReferenceHandler.Preserve,
                 Converters = { new TransactionMessageDataConverter() }
             };
 
@@ -44,6 +46,5 @@ namespace Supplier.Transactions.Messaging
             // Envio para o RabbitMQ
             await _bus.Advanced.Routing.Send(RoutingKeys.TransactionsToCustomers, mensagem);
         }
-
     }
 }

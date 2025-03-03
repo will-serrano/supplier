@@ -1,5 +1,6 @@
 ﻿using FluentValidation;
 using Supplier.Contracts.Transactions;
+using Supplier.Transactions.Configuration.Interfaces;
 using Supplier.Transactions.Dto.Requests;
 using Supplier.Transactions.Dto.Responses;
 using Supplier.Transactions.HttpClients.Interfaces;
@@ -8,6 +9,7 @@ using Supplier.Transactions.Messaging;
 using Supplier.Transactions.Messaging.Interfaces;
 using Supplier.Transactions.Repositories.Interfaces;
 using Supplier.Transactions.Services.Interfaces;
+using System.Security.Claims;
 
 namespace Supplier.Transactions.Services
 {
@@ -21,6 +23,7 @@ namespace Supplier.Transactions.Services
         private readonly ITransactionRequestMapper _transactionRequestMapper;
         private readonly ICustomerMessagePublisher _messagePublisher;
         private readonly ICustomerValidationClient _customerValidationClient;
+        private readonly IJwtSecurityTokenHandlerWrapper _tokenHandlerWrapper;
         private readonly ILogger<TransactionRequestService> _logger;
 
         /// <summary>
@@ -38,6 +41,7 @@ namespace Supplier.Transactions.Services
             ITransactionRequestMapper mapper,
             ICustomerMessagePublisher messagePublisher,
             ICustomerValidationClient customerValidationClient,
+            IJwtSecurityTokenHandlerWrapper tokenHandlerWrapper,
             ILogger<TransactionRequestService> logger)
         {
             _transactionRequestDtoValidator = validator;
@@ -45,6 +49,7 @@ namespace Supplier.Transactions.Services
             _transactionRequestMapper = mapper;
             _messagePublisher = messagePublisher ?? throw new ArgumentNullException(nameof(messagePublisher));
             _customerValidationClient = customerValidationClient ?? throw new ArgumentNullException(nameof(customerValidationClient));
+            _tokenHandlerWrapper = tokenHandlerWrapper ?? throw new ArgumentNullException(nameof(tokenHandlerWrapper));
             _logger = logger;
         }
 
@@ -53,7 +58,7 @@ namespace Supplier.Transactions.Services
         /// </summary>
         /// <param name="dto">The transaction request DTO.</param>
         /// <returns>A task that represents the asynchronous operation. The task result contains the transaction response DTO.</returns>
-        public async Task<TransactionResponseDto> RequestTransactionAsync(TransactionRequestDto dto, string token)
+        public async Task<TransactionResponseDto> RequestTransactionAsync(TransactionRequestDto dto, Guid userId, string token)
         {
             _logger.LogInformation("Starting transaction simulation for CustomerId: {CustomerId}", dto.CustomerId);
 
@@ -65,8 +70,21 @@ namespace Supplier.Transactions.Services
                 throw new ValidationException(validationResult.Errors);
             }
 
+            var isCustomerBlocked = await _transactionRequestRepository.IsCustomerBlockedAsync(dto.CustomerId);
+            if (isCustomerBlocked)
+            {
+                _logger.LogWarning("Customer {CustomerId} is blocked.", dto.CustomerId);
+                return new TransactionResponseDto { Status = "NEGADO" };
+            }
+
             var transactionRequest = _transactionRequestMapper.MapToTransactionRequest(dto)
                 ?? throw new ArgumentNullException(nameof(dto));
+
+            transactionRequest.RequestedBy = userId.ToString();
+            transactionRequest.UpdatedBy = "Supplier.Transactions.API";
+
+            _logger.LogInformation("Customer {CustomerId} blocked for analysis", dto.CustomerId);
+            transactionRequest.CustomerBlocked = true;
 
             transactionRequest = await _transactionRequestRepository.RegisterTransactionRequestAsync(transactionRequest)
                 ?? throw new ArgumentNullException(nameof(dto));
@@ -79,6 +97,7 @@ namespace Supplier.Transactions.Services
             {
                 transactionRequest.Detail = clientValidationResult.Message ?? string.Empty;
                 transactionRequest.Status = Enums.TransactionStatus.Rejected;
+                transactionRequest.CustomerBlocked = false;
                 await _transactionRequestRepository.UpdateTransactionRequestAsync(transactionRequest);
                 _logger.LogWarning("Customer validation failed for CustomerId: {CustomerId}. Message: {Message}", dto.CustomerId, clientValidationResult.Message);
                 return new TransactionResponseDto { Status = "NEGADO" };
@@ -109,6 +128,39 @@ namespace Supplier.Transactions.Services
             _logger.LogInformation("Transaction processing for TransactionId: {TransactionId}", transactionRequest.TransactionId);
 
             return new TransactionResponseDto { Status = "APROVADO", TransactionId = transactionRequest.TransactionId };
+        }
+
+        public async Task<(bool IsValid, string ErrorMessage, Guid UserId)> ValidateRequest(TransactionRequestDto request, string token)
+        {
+            if (request == null)
+            {
+                return (false, "Request cannot be null", Guid.Empty);
+            }
+
+            if (string.IsNullOrEmpty(token))
+            {
+                return (false, "Authorization token is missing or empty", Guid.Empty);
+            }
+
+            var jwtToken = _tokenHandlerWrapper.ReadJwtToken(token);
+            var userIdClaim = jwtToken.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier || c.Type == "sub");
+            var userId = string.Empty;
+            if (userIdClaim != null)
+            {
+                userId = userIdClaim.Value;
+            }
+
+            if (string.IsNullOrEmpty(userId))
+            {
+                return (false, "User ID not found", Guid.Empty);
+            }
+
+            if (!Guid.TryParse(userId, out var userGuid))
+            {
+                return (false, "Invalid User ID format", Guid.Empty);
+            }
+
+            return (true, string.Empty, userGuid);
         }
     }
 }

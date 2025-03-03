@@ -56,7 +56,7 @@ namespace Supplier.Auth.Controllers
             _logger.LogInformation("Login attempt for email: {Email}", request.Email);
 
             var response = await _authService.AuthenticateUser(request);
-            //FIX! NAO RETORNAR TOKEN QDO LOGIN INVALIDO
+            
             if (response.Token == null)
             {
                 _logger.LogWarning("Login failed for email: {Email}", request.Email);
@@ -64,30 +64,6 @@ namespace Supplier.Auth.Controllers
             }
 
             _logger.LogInformation("User logged in successfully with email: {Email}", request.Email);
-            return Ok(response);
-        }
-
-        /// <summary>
-        /// Registers a new admin user.
-        /// </summary>
-        /// <param name="request">The admin registration request data transfer object.</param>
-        /// <returns>An <see cref="IActionResult"/> indicating the result of the admin registration.</returns>
-        [Authorize(Roles = "admin")]
-        [HttpPost("register-admin")]
-        public async Task<IActionResult> RegisterAdmin([FromBody] RegisterAdminRequestDto request)
-        {
-            var currentUser = HttpContext.User;
-            _logger.LogInformation("Admin registration attempt by user: {User}", currentUser.Identity.Name);
-
-            var response = await _authService.RegisterAdminUser(request, currentUser);
-
-            if (response.UserId == Guid.Empty)
-            {
-                _logger.LogWarning("Admin registration failed for email: {Email}", request.Email);
-                return BadRequest(response.Message);
-            }
-
-            _logger.LogInformation("Admin registered successfully with email: {Email}", request.Email);
             return Ok(response);
         }
     }

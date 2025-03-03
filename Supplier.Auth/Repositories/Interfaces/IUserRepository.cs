@@ -1,5 +1,4 @@
-using System.Collections.Generic;
-using System.Threading.Tasks;
+using Supplier.Auth.Dto.Responses;
 using Supplier.Auth.Models;
 
 namespace Supplier.Auth.Repositories.Interfaces
@@ -12,5 +11,7 @@ namespace Supplier.Auth.Repositories.Interfaces
         Task<IEnumerable<string>?> GetUserRoles(Guid userId);
         Task<bool> VerifyPassword(string email, string password);
         Task AssignRolesToUser(Guid userId, List<string> roles);
+        Task<IEnumerable<UserResponseDto>> GetAllUsers();
+        Task<bool> IsUserInRole(Guid userId, string role);
     }
 }

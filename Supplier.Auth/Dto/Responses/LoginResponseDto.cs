@@ -8,20 +8,14 @@
 
         public static LoginResponseDto WithToken(string token)
         {
-            if (_instance == null)
-            {
-                _instance = new LoginResponseDto();
-            }
+            _instance = new LoginResponseDto();
             _instance.Token = token;
             return _instance;
         }
 
         public static LoginResponseDto WithMessage(string message)
         {
-            if (_instance == null)
-            {
-                _instance = new LoginResponseDto();
-            }
+            _instance = new LoginResponseDto();
             _instance.Message = message;
             return _instance;
         }

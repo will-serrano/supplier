@@ -56,7 +56,7 @@ namespace Supplier.Transactions.Tests.HttpClients
         public async Task SendAsync_DoesNotAddTokenToRequestHeaders_WhenTokenIsNotPresent()
         {
             // Arrange
-            var token = "test-token";
+            string token = null; // Token is not present
             var request = new HttpRequestMessage(HttpMethod.Get, "http://test.com");
 
             var response = new HttpResponseMessage(HttpStatusCode.OK);

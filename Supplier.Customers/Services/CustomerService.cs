@@ -63,7 +63,9 @@ namespace Supplier.Customers.Services
 
             var customer = _customerMapper.MapToCustomer(dto);
             await _customerRepository.AddAsync(customer);
-            _customerCache.Remove("customers"); // Invalidate cache when a new customer is added
+            
+            _customerCache.Remove("customers"); // Invalidate cache when a new customer is updated
+            _logger.LogInformation("Cleaning cache for customers");
 
             _logger.LogInformation("Customer created successfully with ID: {CustomerId}", customer.Id);
             return new SingleCustomerResponseDto(customer);
@@ -86,6 +88,8 @@ namespace Supplier.Customers.Services
                 var allCustomers = await _customerRepository.GetAllAsync();
                 return allCustomers ?? Array.Empty<Customer>();
             }) ?? Array.Empty<Customer>();
+
+            _logger.LogInformation("Cache for customers");
 
             var customerRequestDto = _customerMapper.MapToCustomerRequestDto(name, cpf, creditLimit);
             var filteredCustomers = CustomerFilter.ApplyFilters(customers, customerRequestDto);

@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Supplier.Auth.Configuration.Interfaces;
+using Supplier.Auth.Dto.Responses;
 using Supplier.Auth.Models;
 using Supplier.Auth.Repositories;
 using System.Data;
@@ -316,5 +317,58 @@ namespace Supplier.Auth.Tests.Repositories
             // Act & Assert
             await Assert.ThrowsAsync<InvalidOperationException>(() => _userRepository.AssignRolesToUser(userId, roles));
         }
+
+        [Fact]
+        public async Task GetAllUsers_ShouldReturnUsers()
+        {
+            // Arrange
+            var users = new List<UserResponseDto>
+            {
+                new UserResponseDto { Id = Guid.NewGuid(), Email = "user1@example.com" },
+                new UserResponseDto { Id = Guid.NewGuid(), Email = "user2@example.com" }
+            };
+            var connectionMock = new Mock<IDbConnection>();
+
+            _dbConnectionFactoryMock.Setup(f => f.CreateConnection()).Returns(connectionMock.Object);
+            _dapperWrapperMock.Setup(d => d.QueryAsync<UserResponseDto>(It.IsAny<IDbConnection>(), It.IsAny<CommandDefinition>()))
+                .ReturnsAsync(users);
+
+            // Act
+            var result = await _userRepository.GetAllUsers();
+
+            // Assert
+            Assert.Equal(users, result);
+        }
+
+        [Fact]
+        public async Task GetAllUsers_NoUsersFound_ShouldReturnEmptyList()
+        {
+            // Arrange
+            var connectionMock = new Mock<IDbConnection>();
+
+            _dbConnectionFactoryMock.Setup(f => f.CreateConnection()).Returns(connectionMock.Object);
+            _dapperWrapperMock.Setup(d => d.QueryAsync<UserResponseDto>(It.IsAny<IDbConnection>(), It.IsAny<CommandDefinition>()))
+                .ReturnsAsync(Enumerable.Empty<UserResponseDto>());
+
+            // Act
+            var result = await _userRepository.GetAllUsers();
+
+            // Assert
+            Assert.Empty(result);
+        }
+
+        [Fact]
+        public async Task GetAllUsers_ConnectionFails_ShouldReturnEmptyList()
+        {
+            // Arrange
+            _dbConnectionFactoryMock.Setup(f => f.CreateConnection()).Returns((IDbConnection?)null);
+
+            // Act
+            var result = await _userRepository.GetAllUsers();
+
+            // Assert
+            Assert.Empty(result);
+        }
+
     }
 }
