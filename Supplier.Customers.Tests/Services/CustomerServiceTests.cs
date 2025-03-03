@@ -136,5 +136,61 @@ namespace Supplier.Customers.Tests.Services
             _mockCache.Verify(c => c.TryGetValue("customers", out cacheEntry), Times.Once);
             _mockMapper.Verify(m => m.MapToCustomerResponseDto(It.IsAny<Customer>()), Times.Exactly(customers.Count));
         }
+
+        [Fact]
+        public async Task ValidateCustomerAsync_ShouldReturnInvalid_WhenCustomerNotFound()
+        {
+            // Arrange
+            var customerId = Guid.NewGuid();
+            _mockRepository.Setup(r => r.GetAllAsync()).ReturnsAsync((IEnumerable<Customer>)null);
+
+            // Act
+            var result = await _customerService.ValidateCustomerAsync(customerId, 100);
+
+            // Assert
+            result.Should().NotBeNull();
+            result.IsValid.Should().BeFalse();
+            result.Message.Should().Be("Customer not found.");
+        }
+
+        [Fact]
+        public async Task ValidateCustomerAsync_ShouldReturnInvalid_WhenCreditLimitIsInsufficient()
+        {
+            // Arrange
+            var customerId = Guid.NewGuid();
+            var customers = new List<Customer>
+            {
+                new Customer { Id = customerId, CreditLimit = 50 }
+            };
+            _mockRepository.Setup(r => r.GetAllAsync()).ReturnsAsync(customers);
+
+            // Act
+            var result = await _customerService.ValidateCustomerAsync(customerId, 100);
+
+            // Assert
+            result.Should().NotBeNull();
+            result.IsValid.Should().BeFalse();
+            result.Message.Should().Be("Insufficient credit limit.");
+        }
+
+        [Fact]
+        public async Task ValidateCustomerAsync_ShouldReturnValid_WhenCustomerIsValid()
+        {
+            // Arrange
+            var customerId = Guid.NewGuid();
+            var customers = new List<Customer>
+            {
+                new Customer { Id = customerId, CreditLimit = 200 }
+            };
+            _mockRepository.Setup(r => r.GetAllAsync()).ReturnsAsync(customers);
+
+            // Act
+            var result = await _customerService.ValidateCustomerAsync(customerId, 100);
+
+            // Assert
+            result.Should().NotBeNull();
+            result.IsValid.Should().BeTrue();
+            result.Message.Should().Be("Customer successfully validated.");
+        }
     }
 }

@@ -28,6 +28,8 @@ namespace Supplier.Auth.Controllers
         /// </summary>
         /// <param name="request">The registration request data transfer object.</param>
         /// <returns>An <see cref="IActionResult"/> indicating the result of the registration.</returns>
+        [Authorize(Roles = "admin")]
+        [Authorize(Roles = "user")]
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterRequestDto request)
         {

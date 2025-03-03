@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Supplier.Customers.Dto.Requests;
 using Supplier.Customers.Dto.Responses;
 using Supplier.Customers.Services.Interfaces;
@@ -10,6 +11,7 @@ namespace Supplier.Customers.Controllers
     /// </summary>
     [ApiController]
     [Route("api/customers")]
+    [Authorize]
     public class CustomerController : ControllerBase
     {
         private readonly ICustomerService _service;

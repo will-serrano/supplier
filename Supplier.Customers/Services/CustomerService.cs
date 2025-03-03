@@ -97,5 +97,40 @@ namespace Supplier.Customers.Services
             _logger.LogInformation("Fetched {CustomerCount} customers after applying filters.", multipleCustomers.Count);
             return new MultipleCustomersResponseDto(multipleCustomers);
         }
+
+        /// <summary>
+        /// Validates a customer asynchronously based on their ID and a specified amount.
+        /// </summary>
+        /// <param name="customerId">The ID of the customer to validate.</param>
+        /// <param name="amount">The amount to validate against the customer's credit limit.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result contains the customer validation response DTO.</returns>
+        public async Task<CustomerValidationResponseDto> ValidateCustomerAsync(Guid customerId, decimal amount)
+        {
+            var customers = await _customerRepository.GetAllAsync() ?? [];
+            var customer = customers.FirstOrDefault(c => c.Id == customerId);
+            if (customer == null)
+            {
+                return new CustomerValidationResponseDto
+                {
+                    IsValid = false,
+                    Message = "Customer not found."
+                };
+            }
+
+            if (customer.CreditLimit < amount)
+            {
+                return new CustomerValidationResponseDto
+                {
+                    IsValid = false,
+                    Message = "Insufficient credit limit."
+                };
+            }
+
+            return new CustomerValidationResponseDto
+            {
+                IsValid = true,
+                Message = "Customer successfully validated."
+            };
+        }
     }
 }

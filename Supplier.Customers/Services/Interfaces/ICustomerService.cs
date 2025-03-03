@@ -8,5 +8,6 @@ namespace Supplier.Customers.Services.Interfaces
     {
         Task<SingleCustomerResponseDto> CreateCustomerAsync(CustomerRequestDto dto);
         Task<MultipleCustomersResponseDto> GetCustomersAsync(string? name, string? cpf, decimal? creditLimit);
+        Task<CustomerValidationResponseDto> ValidateCustomerAsync(Guid customerId, decimal amount);
     }
 }
