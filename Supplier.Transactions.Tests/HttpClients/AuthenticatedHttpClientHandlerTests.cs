@@ -14,17 +14,15 @@ namespace Supplier.Transactions.Tests.HttpClients
 {
     public class AuthenticatedHttpClientHandlerTests
     {
-        private readonly Mock<IConfiguration> _mockConfiguration;
         private readonly Mock<ILogger<AuthenticatedHttpClientHandler>> _mockLogger;
         private readonly AuthenticatedHttpClientHandler _handler;
         private readonly HttpMessageHandler _innerHandler;
 
         public AuthenticatedHttpClientHandlerTests()
         {
-            _mockConfiguration = new Mock<IConfiguration>();
             _mockLogger = new Mock<ILogger<AuthenticatedHttpClientHandler>>();
             _innerHandler = new Mock<HttpMessageHandler>().Object;
-            _handler = new AuthenticatedHttpClientHandler(_mockConfiguration.Object, _mockLogger.Object)
+            _handler = new AuthenticatedHttpClientHandler(_mockLogger.Object)
             {
                 InnerHandler = _innerHandler
             };
@@ -35,7 +33,6 @@ namespace Supplier.Transactions.Tests.HttpClients
         {
             // Arrange
             var token = "test-token";
-            _mockConfiguration.Setup(c => c["CustomerApi:Token"]).Returns(token);
             var request = new HttpRequestMessage(HttpMethod.Get, "http://test.com");
 
             var response = new HttpResponseMessage(HttpStatusCode.OK);
@@ -46,7 +43,7 @@ namespace Supplier.Transactions.Tests.HttpClients
                 .ReturnsAsync(response);
 
             // Act
-            var result = await _handler.ProtectedSendAsync(request, CancellationToken.None);
+            var result = await _handler.ProtectedSendAsync(request, token,  CancellationToken.None);
 
             // Assert
             Assert.Equal(response, result);
@@ -59,7 +56,7 @@ namespace Supplier.Transactions.Tests.HttpClients
         public async Task SendAsync_DoesNotAddTokenToRequestHeaders_WhenTokenIsNotPresent()
         {
             // Arrange
-            _mockConfiguration.Setup(c => c["CustomerApi:Token"]).Returns((string?)null);
+            var token = "test-token";
             var request = new HttpRequestMessage(HttpMethod.Get, "http://test.com");
 
             var response = new HttpResponseMessage(HttpStatusCode.OK);
@@ -70,7 +67,7 @@ namespace Supplier.Transactions.Tests.HttpClients
                 .ReturnsAsync(response);
 
             // Act
-            var result = await _handler.ProtectedSendAsync(request, CancellationToken.None);
+            var result = await _handler.ProtectedSendAsync(request, token, CancellationToken.None);
 
             // Assert
             Assert.Equal(response, result);

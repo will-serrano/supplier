@@ -1,6 +1,7 @@
 ﻿using Supplier.Transactions.HttpClients.Dto;
 using Supplier.Transactions.HttpClients.Interfaces;
 using Supplier.Transactions.Models;
+using System.Net.Http.Headers;
 
 namespace Supplier.Transactions.HttpClients
 {
@@ -28,12 +29,19 @@ namespace Supplier.Transactions.HttpClients
         /// </summary>
         /// <param name="transactionRequest">The transaction request containing customer details.</param>
         /// <returns>A task that represents the asynchronous operation. The task result contains the validation result.</returns>
-        public async Task<CustomerValidationResultDto> ValidateCustomerAsync(TransactionRequest transactionRequest)
+        public async Task<CustomerValidationResultDto> ValidateCustomerAsync(TransactionRequest transactionRequest, string token)
         {
             try
             {
                 _logger.LogInformation("Starting customer validation for CustomerId: {CustomerId}", transactionRequest.CustomerId);
-                var response = await _httpClient.GetAsync($"/api/customers/{transactionRequest.CustomerId}/validate/{transactionRequest.Amount}");
+
+                var request = new HttpRequestMessage(HttpMethod.Get, $"/api/customers/{transactionRequest.CustomerId}/validate/{transactionRequest.Amount}");
+                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+                var response = await _httpClient.SendAsync(request);
+
+                _logger.LogInformation("Response status code: {StatusCode}", response.StatusCode);
+
                 response.EnsureSuccessStatusCode(); // Throws an exception if the status is not successful
 
                 var result = await response.Content.ReadFromJsonAsync<CustomerValidationResultDto>();

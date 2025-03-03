@@ -26,6 +26,7 @@ namespace Supplier.Transactions.Tests.Services
         private readonly Mock<ICustomerValidationClient> _customerValidationClientMock;
         private readonly Mock<ILogger<TransactionRequestService>> _loggerMock;
         private readonly TransactionRequestService _service;
+        private readonly string _token = "test-token";
 
         public TransactionRequestServiceTests()
         {
@@ -58,12 +59,12 @@ namespace Supplier.Transactions.Tests.Services
             _validatorMock.Setup(v => v.ValidateAsync(dto, default)).ReturnsAsync(validationResult);
             _mapperMock.Setup(m => m.MapToTransactionRequest(dto)).Returns(transactionRequest);
             _repositoryMock.Setup(r => r.RegisterTransactionRequestAsync(transactionRequest)).ReturnsAsync(transactionRequest);
-            _customerValidationClientMock.Setup(c => c.ValidateCustomerAsync(transactionRequest)).ReturnsAsync(clientValidationResult);
+            _customerValidationClientMock.Setup(c => c.ValidateCustomerAsync(transactionRequest, _token)).ReturnsAsync(clientValidationResult);
             _mapperMock.Setup(m => m.MapToTransactionMessageData(transactionRequest)).Returns(transactionMessageData);
             _messagePublisherMock.Setup(m => m.Send(It.IsAny<MessageWrapper>())).Returns(Task.CompletedTask);
 
             // Act
-            var result = await _service.RequestTransactionAsync(dto);
+            var result = await _service.RequestTransactionAsync(dto, _token);
 
             // Assert
             Assert.Equal("APROVADO", result.Status);
@@ -82,7 +83,7 @@ namespace Supplier.Transactions.Tests.Services
             _validatorMock.Setup(v => v.ValidateAsync(dto, default)).ReturnsAsync(validationResult);
 
             // Act & Assert
-            await Assert.ThrowsAsync<ValidationException>(() => _service.RequestTransactionAsync(dto));
+            await Assert.ThrowsAsync<ValidationException>(() => _service.RequestTransactionAsync(dto, _token));
         }
 
         [Fact]
@@ -97,10 +98,10 @@ namespace Supplier.Transactions.Tests.Services
             _validatorMock.Setup(v => v.ValidateAsync(dto, default)).ReturnsAsync(validationResult);
             _mapperMock.Setup(m => m.MapToTransactionRequest(dto)).Returns(transactionRequest);
             _repositoryMock.Setup(r => r.RegisterTransactionRequestAsync(transactionRequest)).ReturnsAsync(transactionRequest);
-            _customerValidationClientMock.Setup(c => c.ValidateCustomerAsync(transactionRequest)).ReturnsAsync(clientValidationResult);
+            _customerValidationClientMock.Setup(c => c.ValidateCustomerAsync(transactionRequest, _token)).ReturnsAsync(clientValidationResult);
 
             // Act
-            var result = await _service.RequestTransactionAsync(dto);
+            var result = await _service.RequestTransactionAsync(dto, _token);
 
             // Assert
             Assert.Equal("NEGADO", result.Status);

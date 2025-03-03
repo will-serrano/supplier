@@ -1,4 +1,5 @@
-﻿using Supplier.Transactions.Models;
+﻿using Supplier.Transactions.Enums;
+using Supplier.Transactions.Models;
 
 namespace Supplier.Transactions.Repositories.Interfaces
 {

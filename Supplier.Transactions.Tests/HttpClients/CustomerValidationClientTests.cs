@@ -4,12 +4,7 @@ using Moq.Protected;
 using Supplier.Transactions.HttpClients;
 using Supplier.Transactions.HttpClients.Dto;
 using Supplier.Transactions.Models;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Net;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Supplier.Transactions.Tests.HttpClients
 {
@@ -19,6 +14,7 @@ namespace Supplier.Transactions.Tests.HttpClients
         private readonly Mock<ILogger<CustomerValidationClient>> _mockLogger;
         private readonly HttpClient _httpClient;
         private readonly CustomerValidationClient _client;
+        private readonly string _token;
 
         public CustomerValidationClientTests()
         {
@@ -29,6 +25,7 @@ namespace Supplier.Transactions.Tests.HttpClients
                 BaseAddress = new Uri("http://test.com")
             };
             _client = new CustomerValidationClient(_httpClient, _mockLogger.Object);
+            _token = "test-token";
         }
 
         [Fact]
@@ -55,7 +52,7 @@ namespace Supplier.Transactions.Tests.HttpClients
                 });
 
             // Act
-            var result = await _client.ValidateCustomerAsync(transactionRequest);
+            var result = await _client.ValidateCustomerAsync(transactionRequest, _token);
 
             // Assert
             Assert.NotNull(result);
@@ -82,7 +79,7 @@ namespace Supplier.Transactions.Tests.HttpClients
                 .ThrowsAsync(new HttpRequestException());
 
             // Act
-            var result = await _client.ValidateCustomerAsync(transactionRequest);
+            var result = await _client.ValidateCustomerAsync(transactionRequest, _token);
 
             // Assert
             Assert.NotNull(result);
@@ -109,7 +106,7 @@ namespace Supplier.Transactions.Tests.HttpClients
                 .ThrowsAsync(new Exception());
 
             // Act
-            var result = await _client.ValidateCustomerAsync(transactionRequest);
+            var result = await _client.ValidateCustomerAsync(transactionRequest, _token);
 
             // Assert
             Assert.NotNull(result);

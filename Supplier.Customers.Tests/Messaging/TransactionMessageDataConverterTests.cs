@@ -1,4 +1,5 @@
-﻿using Supplier.Contracts.Transactions.Interfaces;
+﻿using Supplier.Contracts.Transactions;
+using Supplier.Contracts.Transactions.Interfaces;
 using Supplier.Contracts.Transactions.Requests;
 using Supplier.Contracts.Transactions.Responses;
 using Supplier.Customers.Messaging;

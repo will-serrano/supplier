@@ -54,7 +54,6 @@ namespace Supplier.Transactions.Extensions
 
         public static IServiceCollection ConfigureHttpClients(this IServiceCollection services, IConfiguration configuration)
         {
-
             services.Configure<CustomerApiOptions>(configuration.GetSection("CustomerApi"));
 
             services.AddTransient<AuthenticatedHttpClientHandler>();
@@ -109,6 +108,15 @@ namespace Supplier.Transactions.Extensions
                         ValidAudience = jwtSettings.Audience,
                         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.Secret))
                     };
+                    options.Events = new JwtBearerEvents
+                    {
+                        OnAuthenticationFailed = context =>
+                        {
+                            var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
+                            logger.LogError("Token inválido: {Message}", context.Exception.Message);
+                            return Task.CompletedTask;
+                        }
+                    };
                 });
 
             services.AddAuthorization();
@@ -140,6 +148,10 @@ namespace Supplier.Transactions.Extensions
 
         public static IServiceCollection ConfigureDependencies(this IServiceCollection services, IConfiguration configuration)
         {
+            var jwtSettings = new JwtSettings();
+            configuration.GetSection("JwtSettings").Bind(jwtSettings);
+            services.Configure<JwtSettings>(configuration.GetSection("JwtSettings"));
+
             services.AddEndpointsApiExplorer();
             services.AddSwaggerGen(c =>
             {
@@ -153,7 +165,7 @@ namespace Supplier.Transactions.Extensions
                 c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
                 {
                     In = ParameterLocation.Header,
-                    Description = "Insira o token JWT no formato: Bearer {seu_token}",
+                    Description = jwtSettings.Secret,
                     Name = "Authorization",
                     Type = SecuritySchemeType.Http,
                     Scheme = "Bearer"
@@ -185,6 +197,7 @@ namespace Supplier.Transactions.Extensions
                 var connectionString = ConnectionStringHelper.GetSqliteConnectionString(configuration);
                 return new SqliteConnection(connectionString);
             });
+            services.AddTransient<IJwtSecurityTokenHandlerWrapper, JwtSecurityTokenHandlerWrapper>();
             services.AddTransient<ITransactionRequestService, TransactionRequestService>();
             services.AddTransient<ITransactionRequestRepository, TransactionRequestRepository>();
             services.AddTransient<ITransactionRequestMapper, TransactionRequestMapper>();
@@ -192,6 +205,9 @@ namespace Supplier.Transactions.Extensions
             services.AddScoped<ICustomerMessagePublisher, CustomerMessagePublisher>();
             services.AddScoped<IDapperWrapper, DapperWrapper>();
             services.AddScoped<CustomerMessagePublisher>();
+            services.AddTransient<AuthenticatedHttpClientHandler>();
+
+            
             return services;
         }
 

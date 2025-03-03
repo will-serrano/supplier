@@ -4,7 +4,7 @@ using Supplier.Contracts.Transactions.Responses;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace Supplier.Transactions.Messaging
+namespace Supplier.Contracts.Transactions
 {
     /// <summary>
     /// Converts JSON data to and from <see cref="ITransactionMessageData"/> objects.

@@ -28,8 +28,6 @@ namespace Supplier.Auth.Controllers
         /// </summary>
         /// <param name="request">The registration request data transfer object.</param>
         /// <returns>An <see cref="IActionResult"/> indicating the result of the registration.</returns>
-        [Authorize(Roles = "admin")]
-        [Authorize(Roles = "user")]
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterRequestDto request)
         {
@@ -58,7 +56,7 @@ namespace Supplier.Auth.Controllers
             _logger.LogInformation("Login attempt for email: {Email}", request.Email);
 
             var response = await _authService.AuthenticateUser(request);
-
+            //FIX! NAO RETORNAR TOKEN QDO LOGIN INVALIDO
             if (response.Token == null)
             {
                 _logger.LogWarning("Login failed for email: {Email}", request.Email);

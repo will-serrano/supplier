@@ -53,7 +53,7 @@ namespace Supplier.Transactions.Services
         /// </summary>
         /// <param name="dto">The transaction request DTO.</param>
         /// <returns>A task that represents the asynchronous operation. The task result contains the transaction response DTO.</returns>
-        public async Task<TransactionResponseDto> RequestTransactionAsync(TransactionRequestDto dto)
+        public async Task<TransactionResponseDto> RequestTransactionAsync(TransactionRequestDto dto, string token)
         {
             _logger.LogInformation("Starting transaction simulation for CustomerId: {CustomerId}", dto.CustomerId);
 
@@ -73,17 +73,19 @@ namespace Supplier.Transactions.Services
 
             _logger.LogInformation("Transaction request registered for CustomerId: {CustomerId}", dto.CustomerId);
 
-            var clientValidationResult = await _customerValidationClient.ValidateCustomerAsync(transactionRequest);
+            var clientValidationResult = await _customerValidationClient.ValidateCustomerAsync(transactionRequest, token);
 
             if (!clientValidationResult.IsValid)
             {
                 transactionRequest.Detail = clientValidationResult.Message ?? string.Empty;
+                transactionRequest.Status = Enums.TransactionStatus.Rejected;
                 await _transactionRequestRepository.UpdateTransactionRequestAsync(transactionRequest);
                 _logger.LogWarning("Customer validation failed for CustomerId: {CustomerId}. Message: {Message}", dto.CustomerId, clientValidationResult.Message);
                 return new TransactionResponseDto { Status = "NEGADO" };
             }
 
             transactionRequest.TransactionId = Guid.NewGuid();
+            transactionRequest.Status = Enums.TransactionStatus.Authorized;
             await _transactionRequestRepository.UpdateTransactionRequestAsync(transactionRequest);
 
             _logger.LogInformation("Transaction authorized for CustomerId: {CustomerId}, TransactionId: {TransactionId}", dto.CustomerId, transactionRequest.TransactionId);
@@ -93,13 +95,15 @@ namespace Supplier.Transactions.Services
             var mensagem = new MessageWrapper
             {
                 Version = "V1",
-                Data = transactionMessageDataToSend
+                Data = transactionMessageDataToSend,
+                Type = Contracts.Transactions.Enums.MessageType.TransactionRequestMessageData
             };
 
             await _messagePublisher.Send(mensagem);
 
             _logger.LogInformation("Transaction message sent for TransactionId: {TransactionId}", transactionRequest.TransactionId);
 
+            transactionRequest.Status = Enums.TransactionStatus.Processing;
             await _transactionRequestRepository.UpdateTransactionRequestAsync(transactionRequest);
 
             _logger.LogInformation("Transaction processing for TransactionId: {TransactionId}", transactionRequest.TransactionId);

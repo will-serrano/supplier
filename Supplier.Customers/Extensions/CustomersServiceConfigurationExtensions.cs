@@ -11,9 +11,13 @@ using Serilog;
 using Supplier.Customers.Configuration;
 using Supplier.Customers.Configuration.Interfaces;
 using Supplier.Customers.Helper;
+using Supplier.Customers.Mappers;
+using Supplier.Customers.Mappers.Interfaces;
 using Supplier.Customers.Messaging;
 using Supplier.Customers.Repositories;
 using Supplier.Customers.Repositories.Interfaces;
+using Supplier.Customers.Services;
+using Supplier.Customers.Services.Interfaces;
 using Supplier.Customers.Validators;
 using System.Data;
 using System.Reflection;
@@ -36,18 +40,21 @@ namespace Supplier.Customers.Extensions
 
         public static IServiceCollection ConfigureFluentValidation(this IServiceCollection services)
         {
-            services.AddFluentValidationAutoValidation();
             services.AddValidatorsFromAssemblyContaining<CustomerRequestDtoValidator>();
             return services;
         }
 
         public static IServiceCollection ConfigureJwtAuthentication(this IServiceCollection services, IConfiguration configuration)
         {
-            var jwtSettings = new JwtSettings();
-            configuration.GetSection("JwtSettings").Bind(jwtSettings);
             services.Configure<JwtSettings>(configuration.GetSection("JwtSettings"));
+            var jwtSettings = configuration.GetSection("JwtSettings").Get<JwtSettings>();
 
-            services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+            services
+                .AddAuthentication(options =>
+                {
+                    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+                })
                 .AddJwtBearer(options =>
                 {
                     options.RequireHttpsMetadata = false;
@@ -92,6 +99,12 @@ namespace Supplier.Customers.Extensions
 
         public static IServiceCollection ConfigureDependencies(this IServiceCollection services, IConfiguration configuration)
         {
+            var jwtSettings = new JwtSettings();
+            configuration.GetSection("JwtSettings").Bind(jwtSettings);
+            services.Configure<JwtSettings>(configuration.GetSection("JwtSettings"));
+
+            services.AddValidatorsFromAssemblyContaining<CustomerRequestDtoValidator>();
+            services.AddMemoryCache();
             services.AddEndpointsApiExplorer();
             services.AddSwaggerGen(c =>
             {
@@ -105,7 +118,7 @@ namespace Supplier.Customers.Extensions
                 c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
                 {
                     In = ParameterLocation.Header,
-                    Description = "Insira o token JWT no formato: Bearer {seu_token}",
+                    Description = jwtSettings.Secret,
                     Name = "Authorization",
                     Type = SecuritySchemeType.Http,
                     Scheme = "Bearer"
@@ -113,17 +126,17 @@ namespace Supplier.Customers.Extensions
 
                 c.AddSecurityRequirement(new OpenApiSecurityRequirement
                 {
-                    {
-                        new OpenApiSecurityScheme
                         {
-                            Reference = new OpenApiReference
+                            new OpenApiSecurityScheme
                             {
-                                Type = ReferenceType.SecurityScheme,
-                                Id = "Bearer"
-                            }
-                        },
-                        new string[] {}
-                    }
+                                Reference = new OpenApiReference
+                                {
+                                    Type = ReferenceType.SecurityScheme,
+                                    Id = "Bearer"
+                                }
+                            },
+                            new string[] {}
+                        }
                 });
 
                 var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
@@ -140,6 +153,8 @@ namespace Supplier.Customers.Extensions
                 return new SqliteConnection(connectionString);
             });
             services.AddScoped<ICustomerRepository, CustomerRepository>();
+            services.AddScoped<ICustomerService, CustomerService>();
+            services.AddScoped<ICustomerMapper, CustomerMapper>();
             services.AddScoped<IDapperWrapper, DapperWrapper>();
             services.AddScoped<CustomerMessageHandler>();
             return services;

@@ -1,6 +1,7 @@
 ﻿using Rebus.Bus;
 using Supplier.Contracts.Transactions;
 using Supplier.Transactions.Messaging.Interfaces;
+using System.Text.Json;
 
 namespace Supplier.Transactions.Messaging
 {
@@ -30,9 +31,19 @@ namespace Supplier.Transactions.Messaging
         /// <returns>A task that represents the asynchronous send operation.</returns>
         public async Task Send(MessageWrapper mensagem)
         {
-            // Sends the message to the Transactions API queue
-            _logger.LogInformation("Sending message to the customer queue.");
+            var options = new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                WriteIndented = true,
+                Converters = { new TransactionMessageDataConverter() }
+            };
+
+            string json = JsonSerializer.Serialize(mensagem, options);
+            _logger.LogInformation("Serialized message: {Json}", json);
+
+            // Envio para o RabbitMQ
             await _bus.Advanced.Routing.Send(RoutingKeys.TransactionsToCustomers, mensagem);
         }
+
     }
 }

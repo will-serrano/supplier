@@ -1,6 +1,8 @@
 ﻿using Rebus.Handlers;
 using Supplier.Contracts.Transactions;
 using Supplier.Contracts.Transactions.Responses;
+using Supplier.Transactions.Enums;
+using Supplier.Transactions.Models;
 using Supplier.Transactions.Repositories.Interfaces;
 
 namespace Supplier.Transactions.Messaging
@@ -47,6 +49,7 @@ namespace Supplier.Transactions.Messaging
             if (!transactionData!.IsSuccess)
             {
                 _logger.LogError("Transaction rejected: {TransactionId} - Message: {Message}", transactionData.TransactionId, transactionData.Message);
+
                 await _transactionRequestRepository.UpdateTransactionRequestAsync(transactionData.TransactionId, transactionData.Message);
                 return;
             }

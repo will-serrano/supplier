@@ -61,19 +61,20 @@ namespace Supplier.Auth.Repositories
             string hashedPassword = _passwordHasher.HashPassword(new IdentityUser { Email = email }, password);
             string query = @"
                                     INSERT INTO Users (Id, Email, PasswordHash) 
-                                    VALUES (@Id, @Email, @PasswordHash); 
-                                    SELECT @Id;";
+                                    VALUES (@Id, @Email, @PasswordHash);";
 
             var id = Guid.NewGuid();
 
             try
             {
-                return await _dapperWrapper.ExecuteScalarAsync<Guid>(connection, new CommandDefinition(query, new
+                await _dapperWrapper.ExecuteScalarAsync<Guid>(connection, new CommandDefinition(query, new
                 {
                     Id = id,
                     Email = email,
                     PasswordHash = hashedPassword
                 }));
+
+                return id;
             }
             catch (Exception ex)
             {

@@ -38,9 +38,9 @@ namespace Supplier.Transactions.Repositories
             _logger.LogInformation("Registering transaction request: {TransactionId}", transaction.Id);
 
             const string insertQuery = @"
-                            INSERT INTO CustomerTransactions (Id, CustomerId, Amount, Status, RequestedBy, RequestedAt, CustomerBlocked) 
+                            INSERT INTO TransactionRequests (Id, CustomerId, Amount, Status, RequestedBy, RequestedAt, CustomerBlocked) 
                             VALUES (@Id, @CustomerId, @Amount, @Status, @RequestedBy, @RequestedAt, @CustomerBlocked);
-                            SELECT * FROM CustomerTransactions WHERE Id = @Id;";
+                            SELECT * FROM TransactionRequests WHERE Id = @Id;";
 
             using var connection = _dbConnectionFactory.CreateConnection();
             var insertedTransaction = await _dapperWrapper.QueryFirstOrDefaultAsync<TransactionRequest>(connection, new CommandDefinition(insertQuery, new
@@ -75,11 +75,11 @@ namespace Supplier.Transactions.Repositories
             _logger.LogInformation("Updating transaction request: {TransactionId}", transactionRequest.Id);
 
             const string updateQuery = @"
-                            UPDATE CustomerTransactions 
+                            UPDATE TransactionRequests 
                             SET Amount = @Amount, 
                                 Status = @Status, 
-                                UpdatedBy = @UpdatedBy, 
                                 UpdatedAt = @UpdatedAt, 
+                                TransactionId = @TransactionId,
                                 Detail = @Detail 
                             WHERE Id = @Id;";
 
@@ -89,7 +89,7 @@ namespace Supplier.Transactions.Repositories
                 transactionRequest.Id,
                 transactionRequest.Amount,
                 transactionRequest.Status,
-                transactionRequest.UpdatedBy,
+                transactionRequest.TransactionId,
                 UpdatedAt = DateTime.UtcNow,
                 transactionRequest.Detail
             }));
@@ -106,18 +106,16 @@ namespace Supplier.Transactions.Repositories
             _logger.LogInformation("Updating transaction request status to Completed: {TransactionId}", transactionId);
 
             const string updateStatusQuery = @"
-                            UPDATE CustomerTransactions 
+                            UPDATE TransactionRequests 
                             SET Status = @Status, 
-                                UpdatedBy = @UpdatedBy, 
                                 UpdatedAt = @UpdatedAt 
-                            WHERE Id = @TransactionId;";
+                            WHERE TransactionId = @TransactionId;";
 
             using var connection = _dbConnectionFactory.CreateConnection();
             await _dapperWrapper.ExecuteAsync(connection, new CommandDefinition(updateStatusQuery, new
             {
                 TransactionId = transactionId,
                 Status = TransactionStatus.Completed,
-                UpdatedBy = "System",
                 UpdatedAt = DateTime.UtcNow
             }));
 
@@ -134,9 +132,8 @@ namespace Supplier.Transactions.Repositories
             _logger.LogInformation("Updating transaction request status to Failed: {TransactionId}, Message: {Message}", transactionId, message);
 
             const string updateFailureQuery = @"
-                            UPDATE CustomerTransactions 
+                            UPDATE TransactionRequests 
                             SET Status = @Status, 
-                                UpdatedBy = @UpdatedBy, 
                                 UpdatedAt = @UpdatedAt, 
                                 Detail = @Detail 
                             WHERE Id = @TransactionId;";
@@ -144,9 +141,8 @@ namespace Supplier.Transactions.Repositories
             using var connection = _dbConnectionFactory.CreateConnection();
             await _dapperWrapper.ExecuteAsync(connection, new CommandDefinition(updateFailureQuery, new
             {
-                TransactionId = transactionId,
+                TransactionId = transactionId.ToString(),
                 Status = TransactionStatus.Failed,
-                UpdatedBy = "System",
                 UpdatedAt = DateTime.UtcNow,
                 Detail = message
             }));

@@ -1,5 +1,6 @@
 using FluentMigrator.Runner;
 using Serilog;
+using Supplier.Transactions.Configuration;
 using Supplier.Transactions.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -30,6 +31,8 @@ using (var scope = app.Services.CreateScope())
     var runner = scope.ServiceProvider.GetRequiredService<IMigrationRunner>();
     runner.MigrateUp();
 }
+
+Dapper.SqlMapper.AddTypeHandler(new GuidTypeHandler());
 
 // Configura os middlewares
 app.UseSerilogRequestLogging();

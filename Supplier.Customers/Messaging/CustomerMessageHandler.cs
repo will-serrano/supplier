@@ -64,6 +64,8 @@ namespace Supplier.Customers.Messaging
                 return;
             }
 
+            //FIX! LIMPAR CACHE
+
             await _customerRepository.UpdateCustomerAsync(customer);
             _logger.LogInformation("Customer limit {CustomerId} updated to {NewLimit}", customer.Id, customer.CreditLimit);
 
@@ -83,7 +85,8 @@ namespace Supplier.Customers.Messaging
             var messageToSend = new MessageWrapper
             {
                 Version = "V1",
-                Data = response
+                Data = response,
+                Type = Contracts.Transactions.Enums.MessageType.TransactionResponseMessageData
             };
 
             await _bus.Advanced.Routing.Send(RoutingKeys.CustomersToTransactions, messageToSend);
@@ -102,7 +105,8 @@ namespace Supplier.Customers.Messaging
             var messageToSend = new MessageWrapper
             {
                 Version = "V1",
-                Data = responseData
+                Data = responseData,
+                Type = Contracts.Transactions.Enums.MessageType.TransactionResponseMessageData
             };
 
             await _bus.Advanced.Routing.Send(RoutingKeys.CustomersToTransactions, messageToSend);

@@ -37,21 +37,18 @@ namespace Supplier.Auth.Tests.Repositories
             var email = "test@example.com";
             var password = "password";
             var hashedPassword = "hashedPassword";
-            var userId = Guid.NewGuid();
             var connectionMock = new Mock<IDbConnection>();
 
             _dbConnectionFactoryMock.Setup(f => f.CreateConnection()).Returns(connectionMock.Object);
             _dapperWrapperMock.Setup(d => d.ExecuteScalarAsync<int>(It.IsAny<IDbConnection>(), It.IsAny<CommandDefinition>()))
                 .ReturnsAsync(0); // User does not exist
             _passwordHasherMock.Setup(p => p.HashPassword(It.IsAny<IdentityUser>(), password)).Returns(hashedPassword);
-            _dapperWrapperMock.Setup(d => d.ExecuteScalarAsync<Guid>(It.IsAny<IDbConnection>(), It.IsAny<CommandDefinition>()))
-                .ReturnsAsync(userId);
 
             // Act
             var result = await _userRepository.CreateUser(email, password);
 
             // Assert
-            Assert.Equal(userId, result);
+            Assert.NotEqual(Guid.Empty, result);
         }
 
         [Fact]

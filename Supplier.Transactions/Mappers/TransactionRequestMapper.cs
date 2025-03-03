@@ -21,7 +21,7 @@ namespace Supplier.Transactions.Mappers
             {
                 Amount = transactionRequest.Amount,
                 CustomerId = transactionRequest.CustomerId,
-                TransactionId = transactionRequest.TransactionId
+                TransactionId = transactionRequest.TransactionId,
             };
         }
 

@@ -5,6 +5,6 @@ namespace Supplier.Transactions.HttpClients.Interfaces
 {
     public interface ICustomerValidationClient
     {
-        Task<CustomerValidationResultDto> ValidateCustomerAsync(TransactionRequest transactionRequest);
+        Task<CustomerValidationResultDto> ValidateCustomerAsync(TransactionRequest transactionRequest, string token);
     }
 }

@@ -1,7 +1,9 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Supplier.Transactions.Configuration.Interfaces;
 using Supplier.Transactions.Dto.Requests;
 using Supplier.Transactions.Services.Interfaces;
+using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 
 namespace Supplier.Transactions.Controllers
@@ -16,16 +18,19 @@ namespace Supplier.Transactions.Controllers
     {
         private readonly ITransactionRequestService _transactionService;
         private readonly ILogger<TransactionController> _logger;
+        private readonly IJwtSecurityTokenHandlerWrapper _tokenHandlerWrapper;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="TransactionController"/> class.
         /// </summary>
         /// <param name="transactionService">The transaction service.</param>
+        /// <param name="logger">The logger instance.</param>
         /// <exception cref="ArgumentNullException">Thrown when transactionService is null.</exception>
-        public TransactionController(ITransactionRequestService transactionService, ILogger<TransactionController> logger)
+        public TransactionController(ITransactionRequestService transactionService, ILogger<TransactionController> logger, IJwtSecurityTokenHandlerWrapper tokenHandlerWrapper)
         {
             _transactionService = transactionService ?? throw new ArgumentNullException(nameof(transactionService));
             _logger = logger;
+            _tokenHandlerWrapper = tokenHandlerWrapper;
         }
 
         /// <summary>
@@ -42,7 +47,21 @@ namespace Supplier.Transactions.Controllers
                 return BadRequest("Request cannot be null");
             }
 
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var token = HttpContext.Request.Headers["Authorization"].ToString().Replace("Bearer ", "");
+            if (string.IsNullOrEmpty(token))
+            {
+                _logger.LogWarning("Authorization token is missing or empty");
+                return Unauthorized("Authorization token is missing or empty");
+            }
+
+            var jwtToken = _tokenHandlerWrapper.ReadJwtToken(token);
+            var userIdClaim = jwtToken.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier || c.Type == "sub");
+            var userId = string.Empty;
+            if (userIdClaim != null)
+            {
+                userId = userIdClaim.Value;
+            }
+
             if (string.IsNullOrEmpty(userId))
             {
                 _logger.LogWarning("User ID not found");
@@ -60,7 +79,7 @@ namespace Supplier.Transactions.Controllers
             try
             {
                 _logger.LogInformation("Simulating transaction for User ID: {UserId}", userGuid);
-                var resultado = await _transactionService.RequestTransactionAsync(request);
+                var resultado = await _transactionService.RequestTransactionAsync(request, token);
                 if (resultado == null)
                 {
                     _logger.LogError("An error occurred while processing the transaction for User ID: {UserId}", userGuid);
