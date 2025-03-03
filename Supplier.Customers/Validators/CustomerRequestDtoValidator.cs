@@ -4,25 +4,46 @@ using Supplier.Customers.Repositories.Interfaces;
 
 namespace Supplier.Customers.Validators
 {
+    /// <summary>
+    /// Validator for CustomerRequestDto.
+    /// </summary>
     public class CustomerRequestDtoValidator : AbstractValidator<CustomerRequestDto>
     {
         private readonly ICustomerRepository _customerRepository;
-        public CustomerRequestDtoValidator(ICustomerRepository customerRepository)
+        private readonly ILogger<CustomerRequestDtoValidator> _logger;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CustomerRequestDtoValidator"/> class.
+        /// </summary>
+        /// <param name="customerRepository">The customer repository.</param>
+        /// <param name="logger">The logger instance.</param>
+        public CustomerRequestDtoValidator(ICustomerRepository customerRepository, ILogger<CustomerRequestDtoValidator> logger)
         {
             _customerRepository = customerRepository;
+            _logger = logger;
+
+            _logger.LogInformation("Initializing CustomerRequestDtoValidator");
 
             RuleFor(x => x.Name)
-                .NotEmpty().WithMessage("O nome não pode estar vazio.")
-                .MaximumLength(100).WithMessage("O nome deve ter no máximo 100 caracteres.");
+                .NotEmpty().WithMessage("Name cannot be empty.")
+                .MaximumLength(100).WithMessage("Name must be at most 100 characters long.");
 
             RuleFor(x => x.Cpf)
-                .NotEmpty().WithMessage("O CPF é obrigatório.")
-                .Matches(@"^\d{11}$").WithMessage("O CPF deve conter 11 dígitos numéricos.")
-                .MustAsync(async (cpf, cancellation) => !(await _customerRepository.ExistsAsync(cpf)))
-                .WithMessage("O CPF já está cadastrado.");
+                .NotEmpty().WithMessage("CPF is required.")
+                .Matches(@"^\d{11}$").WithMessage("CPF must contain 11 numeric digits.")
+                .MustAsync(async (cpf, cancellation) =>
+                {
+                    var exists = await _customerRepository.ExistsAsync(cpf);
+                    if (exists)
+                    {
+                        _logger.LogWarning("CPF {Cpf} already exists.", cpf);
+                    }
+                    return !exists;
+                })
+                .WithMessage("CPF is already registered.");
 
             RuleFor(x => x.CreditLimit)
-                .GreaterThanOrEqualTo(0).WithMessage("O limite de crédito não pode ser negativo.");
+                .GreaterThanOrEqualTo(0).WithMessage("Credit limit cannot be negative.");
         }
     }
 }

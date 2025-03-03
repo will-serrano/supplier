@@ -1,4 +1,5 @@
-﻿using Moq;
+﻿using Microsoft.Extensions.Logging;
+using Moq;
 using Supplier.Auth.Dto.Requests;
 using Supplier.Auth.Models;
 using Supplier.Auth.Repositories.Interfaces;
@@ -12,13 +13,15 @@ namespace Supplier.Auth.Tests.Services
     {
         private readonly Mock<IUserRepository> _userRepositoryMock;
         private readonly Mock<IToken> _jwtServiceMock;
+        private readonly Mock<ILogger<AuthService>> _loggerMock;
         private readonly AuthService _authService;
 
         public AuthServiceTests()
         {
             _userRepositoryMock = new Mock<IUserRepository>();
             _jwtServiceMock = new Mock<IToken>();
-            _authService = new AuthService(_userRepositoryMock.Object, _jwtServiceMock.Object);
+            _loggerMock = new Mock<ILogger<AuthService>>();
+            _authService = new AuthService(_userRepositoryMock.Object, _jwtServiceMock.Object, _loggerMock.Object);
         }
 
         [Fact]
@@ -33,7 +36,7 @@ namespace Supplier.Auth.Tests.Services
 
             // Assert
             Assert.Equal(Guid.Empty, result.UserId);
-            Assert.Equal("Usuário já cadastrado.", result.Message);
+            Assert.Equal("User already registered.", result.Message);
         }
 
         [Fact]
@@ -49,7 +52,7 @@ namespace Supplier.Auth.Tests.Services
 
             // Assert
             Assert.Equal(Guid.Empty, result.UserId);
-            Assert.Equal("Erro ao criar usuário.", result.Message);
+            Assert.Equal("Error creating user.", result.Message);
         }
 
         [Fact]
@@ -66,7 +69,7 @@ namespace Supplier.Auth.Tests.Services
 
             // Assert
             Assert.Equal(userId, result.UserId);
-            Assert.Equal("Usuário cadastrado com sucesso.", result.Message);
+            Assert.Equal("User successfully registered.", result.Message);
         }
 
         [Fact]
@@ -80,7 +83,7 @@ namespace Supplier.Auth.Tests.Services
             var result = await _authService.AuthenticateUser(request);
 
             // Assert
-            Assert.Equal("Email ou senha inválidos.", result.Message);
+            Assert.Equal("Invalid email or password.", result.Message);
         }
 
         [Fact]
@@ -116,7 +119,7 @@ namespace Supplier.Auth.Tests.Services
 
             // Assert
             Assert.Equal(Guid.Empty, result.UserId);
-            Assert.Equal("Apenas administradores podem criar outros administradores.", result.Message);
+            Assert.Equal("Only administrators can create other administrators.", result.Message);
         }
 
         [Fact]
@@ -135,7 +138,7 @@ namespace Supplier.Auth.Tests.Services
 
             // Assert
             Assert.Equal(userId, result.UserId);
-            Assert.Equal("Usuário administrador cadastrado com sucesso.", result.Message);
+            Assert.Equal("Admin user successfully registered.", result.Message);
         }
     }
 }

@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Options;
+﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Moq;
 using Supplier.Auth.Configuration;
 using Supplier.Auth.Services;
@@ -11,10 +12,12 @@ namespace Supplier.Auth.Tests.Services
     {
         private readonly JwtService _jwtService;
         private readonly Mock<IOptions<JwtSettings>> _jwtSettingsMock;
+        private readonly Mock<ILogger<JwtService>> _loggerMock;
 
         public JwtServiceTests()
         {
             _jwtSettingsMock = new Mock<IOptions<JwtSettings>>();
+            _loggerMock = new Mock<ILogger<JwtService>>();
             _jwtSettingsMock.Setup(s => s.Value).Returns(new JwtSettings
             {
                 Secret = "supersecretkey12345678901234567890", // Ensure the key is at least 32 characters long
@@ -23,7 +26,7 @@ namespace Supplier.Auth.Tests.Services
                 ExpirationMinutes = 60
             });
 
-            _jwtService = new JwtService(_jwtSettingsMock.Object);
+            _jwtService = new JwtService(_jwtSettingsMock.Object, _loggerMock.Object);
         }
 
         [Fact]

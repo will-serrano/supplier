@@ -5,6 +5,6 @@ namespace Supplier.Transactions.Services.Interfaces
 {
     public interface ITransactionRequestService
     {
-        Task<TransactionResponseDto> SimularTransacaoAsync(TransactionRequestDto request);
+        Task<TransactionResponseDto> RequestTransactionAsync(TransactionRequestDto request);
     }
 }

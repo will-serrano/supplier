@@ -1,5 +1,6 @@
 ﻿using Dapper;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Logging;
 using Moq;
 using Supplier.Auth.Configuration.Interfaces;
 using Supplier.Auth.Models;
@@ -13,6 +14,7 @@ namespace Supplier.Auth.Tests.Repositories
         private readonly Mock<IDbConnectionFactory> _dbConnectionFactoryMock;
         private readonly Mock<IPasswordHasher<IdentityUser>> _passwordHasherMock;
         private readonly Mock<IDapperWrapper> _dapperWrapperMock;
+        private readonly Mock<ILogger<UserRepository>> _loggerMock;
         private readonly UserRepository _userRepository;
 
         public UserRepositoryTests()
@@ -20,10 +22,12 @@ namespace Supplier.Auth.Tests.Repositories
             _dbConnectionFactoryMock = new Mock<IDbConnectionFactory>();
             _passwordHasherMock = new Mock<IPasswordHasher<IdentityUser>>();
             _dapperWrapperMock = new Mock<IDapperWrapper>();
+            _loggerMock = new Mock<ILogger<UserRepository>>();
             _userRepository = new UserRepository(
                 _dbConnectionFactoryMock.Object,
                 _passwordHasherMock.Object,
-                _dapperWrapperMock.Object);
+                _dapperWrapperMock.Object,
+                _loggerMock.Object);
         }
 
         [Fact]

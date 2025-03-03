@@ -1,6 +1,5 @@
 ﻿using Dapper;
 using Microsoft.AspNetCore.Identity;
-using Serilog;
 using Supplier.Auth.Configuration.Interfaces;
 using Supplier.Auth.Models;
 using Supplier.Auth.Repositories.Interfaces;
@@ -16,6 +15,7 @@ namespace Supplier.Auth.Repositories
         private readonly IDbConnectionFactory _dbConnectionFactory;
         private readonly IPasswordHasher<IdentityUser> _passwordHasher;
         private readonly IDapperWrapper _dapperWrapper;
+        private readonly ILogger<UserRepository> _logger;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="UserRepository"/> class.
@@ -23,14 +23,17 @@ namespace Supplier.Auth.Repositories
         /// <param name="dbConnectionFactory">The database connection factory.</param>
         /// <param name="passwordHasher">The password hasher.</param>
         /// <param name="dapperWrapper">The Dapper wrapper.</param>
+        /// <param name="logger">The logger.</param>
         public UserRepository(
             IDbConnectionFactory dbConnectionFactory,
             IPasswordHasher<IdentityUser> passwordHasher,
-            IDapperWrapper dapperWrapper)
+            IDapperWrapper dapperWrapper,
+            ILogger<UserRepository> logger)
         {
             _dbConnectionFactory = dbConnectionFactory;
             _passwordHasher = passwordHasher;
             _dapperWrapper = dapperWrapper;
+            _logger = logger;
         }
 
         /// <summary>
@@ -44,22 +47,22 @@ namespace Supplier.Auth.Repositories
             using var connection = _dbConnectionFactory.CreateConnection();
             if (connection == null)
             {
-                Log.Error("Failed to create a connection to the database.");
+                _logger.LogError("Failed to create a connection to the database.");
                 return null;
             }
 
             // Check if the user already exists
             if (await UserExists(email) == true)
             {
-                Log.Information("User with email {Email} already exists.", email);
+                _logger.LogInformation("User with email {Email} already exists.", email);
                 return null;
             }
 
             string hashedPassword = _passwordHasher.HashPassword(new IdentityUser { Email = email }, password);
             string query = @"
-                                INSERT INTO Users (Id, Email, PasswordHash) 
-                                VALUES (@Id, @Email, @PasswordHash); 
-                                SELECT @Id;";
+                                    INSERT INTO Users (Id, Email, PasswordHash) 
+                                    VALUES (@Id, @Email, @PasswordHash); 
+                                    SELECT @Id;";
 
             var id = Guid.NewGuid();
 
@@ -74,7 +77,7 @@ namespace Supplier.Auth.Repositories
             }
             catch (Exception ex)
             {
-                Log.Error(ex, "Error executing CreateUser query.");
+                _logger.LogError(ex, "Error executing CreateUser query.");
                 return null;
             }
         }
@@ -89,7 +92,7 @@ namespace Supplier.Auth.Repositories
             using var connection = _dbConnectionFactory.CreateConnection();
             if (connection == null)
             {
-                Log.Error("Failed to create a connection to the database.");
+                _logger.LogError("Failed to create a connection to the database.");
                 return null;
             }
 
@@ -110,7 +113,7 @@ namespace Supplier.Auth.Repositories
             using var connection = _dbConnectionFactory.CreateConnection();
             if (connection == null)
             {
-                Log.Error("Failed to create a connection to the database.");
+                _logger.LogError("Failed to create a connection to the database.");
                 return null;
             }
 
@@ -130,15 +133,15 @@ namespace Supplier.Auth.Repositories
             using var connection = _dbConnectionFactory.CreateConnection();
             if (connection == null)
             {
-                Log.Error("Failed to create a connection to the database.");
+                _logger.LogError("Failed to create a connection to the database.");
                 return null;
             }
 
             return await _dapperWrapper.QueryAsync<string>(connection, new CommandDefinition(
                 @"SELECT r.Name 
-                                  FROM Roles r 
-                                  INNER JOIN UserRoles ur ON r.Id = ur.RoleId 
-                                  WHERE ur.UserId = @UserId",
+                    FROM Roles r 
+                    INNER JOIN UserRoles ur ON r.Id = ur.RoleId 
+                    WHERE ur.UserId = @UserId",
                 new { UserId = userId }
             ));
         }

@@ -1,8 +1,10 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using Moq;
 using Supplier.Auth.Controllers;
 using Supplier.Auth.Dto.Requests;
 using Supplier.Auth.Dto.Responses;
+using Supplier.Auth.Repositories;
 using Supplier.Auth.Services.Interfaces;
 
 namespace Supplier.Auth.Tests.Controllers
@@ -11,11 +13,13 @@ namespace Supplier.Auth.Tests.Controllers
     {
         private readonly Mock<IAuthService> _authServiceMock;
         private readonly AuthController _authController;
+        private readonly Mock<ILogger<AuthController>> _loggerMock;
 
         public AuthControllerTests()
         {
             _authServiceMock = new Mock<IAuthService>();
-            _authController = new AuthController(_authServiceMock.Object);
+            _loggerMock = new Mock<ILogger<AuthController>>();
+            _authController = new AuthController(_authServiceMock.Object, _loggerMock.Object);
         }
 
         [Fact]

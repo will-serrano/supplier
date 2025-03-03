@@ -178,7 +178,7 @@ namespace Supplier.Transactions.Extensions
                 c.IncludeXmlComments(xmlPath);
             });
             services.AddSingleton<IDbConnectionFactory, DbConnectionFactory>();
-            services.AddSingleton<ISerializer, RebusMessageSerializer>();
+            //services.AddSingleton<ISerializer, RebusMessageSerializer>();
             services.AddScoped<IDbConnection>(sp =>
             {
                 var connectionString = ConnectionStringHelper.GetSqliteConnectionString(configuration);

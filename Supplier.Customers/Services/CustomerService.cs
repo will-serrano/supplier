@@ -10,51 +10,91 @@ using Supplier.Customers.Services.Interfaces;
 
 namespace Supplier.Customers.Services
 {
-    public class CustomerService(
-        IValidator<CustomerRequestDto> customerValidator, 
-        ICustomerRepository repository, 
-        ICustomerMapper mapper, 
-        IMemoryCache cache) : ICustomerService
+    /// <summary>
+    /// Service for managing customers.
+    /// </summary>
+    public class CustomerService : ICustomerService
     {
-        private readonly IValidator<CustomerRequestDto> _customerValidator = customerValidator;
-        private readonly ICustomerRepository _customerRepository = repository;
-        private readonly ICustomerMapper _customerMapper = mapper;
-        private readonly IMemoryCache _customerCache = cache;
+        private readonly IValidator<CustomerRequestDto> _customerValidator;
+        private readonly ICustomerRepository _customerRepository;
+        private readonly ICustomerMapper _customerMapper;
+        private readonly IMemoryCache _customerCache;
+        private readonly ILogger<CustomerService> _logger;
         private readonly TimeSpan _cacheDuration = TimeSpan.FromMinutes(10);
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CustomerService"/> class.
+        /// </summary>
+        /// <param name="customerValidator">The customer validator.</param>
+        /// <param name="repository">The customer repository.</param>
+        /// <param name="mapper">The customer mapper.</param>
+        /// <param name="cache">The memory cache.</param>
+        /// <param name="logger">The logger.</param>
+        public CustomerService(
+            IValidator<CustomerRequestDto> customerValidator,
+            ICustomerRepository repository,
+            ICustomerMapper mapper,
+            IMemoryCache cache,
+            ILogger<CustomerService> logger)
+        {
+            _customerValidator = customerValidator;
+            _customerRepository = repository;
+            _customerMapper = mapper;
+            _customerCache = cache;
+            _logger = logger;
+        }
+
+        /// <summary>
+        /// Creates a new customer asynchronously.
+        /// </summary>
+        /// <param name="dto">The customer request DTO.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result contains the single customer response DTO.</returns>
+        /// <exception cref="ValidationException">Thrown when the customer validation fails.</exception>
         public async Task<SingleCustomerResponseDto> CreateCustomerAsync(CustomerRequestDto dto)
         {
-            var validationResult = await _customerValidator.ValidateAsync(dto);
+            _logger.LogInformation("Starting customer creation process.");
 
+            var validationResult = await _customerValidator.ValidateAsync(dto);
             if (!validationResult.IsValid)
+            {
+                _logger.LogWarning("Customer validation failed: {Errors}", validationResult.Errors);
                 throw new ValidationException(validationResult.Errors);
+            }
 
             var customer = _customerMapper.MapToCustomer(dto);
-
             await _customerRepository.AddAsync(customer);
+            _customerCache.Remove("customers"); // Invalidate cache when a new customer is added
 
-            _customerCache.Remove("customers"); // Invalida cache ao cadastrar novo cliente
-
+            _logger.LogInformation("Customer created successfully with ID: {CustomerId}", customer.Id);
             return new SingleCustomerResponseDto(customer);
         }
 
-        public async Task<MultipleCustomersResponseDto> GetCustomersAsync(string? name, string? cpf, decimal? creditLimit)
+        /// <summary>
+        /// Gets customers asynchronously with optional filters.
+        /// </summary>
+        /// <param name="name">The customer name filter.</param>
+        /// <param name="cpf">The customer CPF filter.</param>
+        /// <param name="creditLimit">The customer credit limit filter.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result contains the multiple customers response DTO.</returns>
+        public async Task<MultipleCustomersResponseDto> GetCustomersAsync(string? name = "", string? cpf = "", decimal? creditLimit = 0)
         {
-            var customers =  await _customerCache.GetOrCreateAsync("customers", async entry =>
+            _logger.LogInformation("Fetching customers with filters - Name: {Name}, CPF: {Cpf}, CreditLimit: {CreditLimit}", name, cpf, creditLimit);
+
+            var customers = await _customerCache.GetOrCreateAsync("customers", async entry =>
             {
                 entry.AbsoluteExpirationRelativeToNow = _cacheDuration;
-                var customers = await _customerRepository.GetAllAsync();
-                return customers ?? [];
-            }) ?? [];
+                var allCustomers = await _customerRepository.GetAllAsync();
+                return allCustomers ?? Array.Empty<Customer>();
+            }) ?? Array.Empty<Customer>();
 
             var customerRequestDto = _customerMapper.MapToCustomerRequestDto(name, cpf, creditLimit);
-
             var filteredCustomers = CustomerFilter.ApplyFilters(customers, customerRequestDto);
 
             var multipleCustomers = filteredCustomers
                 .Select(c => _customerMapper.MapToCustomerResponseDto(c))
                 .ToList();
 
+            _logger.LogInformation("Fetched {CustomerCount} customers after applying filters.", multipleCustomers.Count);
             return new MultipleCustomersResponseDto(multipleCustomers);
         }
     }

@@ -5,12 +5,12 @@ namespace Supplier.Customers.Dto.Responses
 {
     public class MultipleCustomersResponseDto : CustomerResponseBase
     {
-        public IEnumerable<CustomerResponseDto> Clientes { get; }
+        public IEnumerable<CustomerResponseDto> Customers { get; }
 
         public MultipleCustomersResponseDto(IEnumerable<CustomerResponseDto> multipleCustomers)
              : base()
         {
-            Clientes = multipleCustomers;
+            Customers = multipleCustomers;
         }
     }
 }

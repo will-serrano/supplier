@@ -3,19 +3,32 @@ using Supplier.Transactions.Dto.Requests;
 
 namespace Supplier.Transactions.Validators
 {
+    /// <summary>
+    /// Validator for TransactionRequestDto.
+    /// </summary>
     public class TransactionRequestDtoValidator : AbstractValidator<TransactionRequestDto>
     {
-        public TransactionRequestDtoValidator()
+        private readonly ILogger<TransactionRequestDtoValidator> _logger;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="TransactionRequestDtoValidator"/> class.
+        /// </summary>
+        /// <param name="logger">The logger instance to use for logging.</param>
+        public TransactionRequestDtoValidator(ILogger<TransactionRequestDtoValidator> logger)
         {
-            // Exemplo de regra para validar o valor da transação (Amount)
+            _logger = logger;
+
+            // Log the start of validation
+            _logger.LogInformation("Initializing TransactionRequestDtoValidator");
+
+            // Example rule to validate the transaction amount (Amount)
             RuleFor(x => x.Amount)
-                .NotNull().WithMessage("O valor da transação é obrigatório.")
-                .GreaterThan(0).WithMessage("O valor da transação deve ser maior que zero.");
+                .NotNull().WithMessage("The transaction amount is required.")
+                .GreaterThan(0).WithMessage("The transaction amount must be greater than zero.");
 
-            // Exemplo de regra para validar o identificador do cliente
+            // Example rule to validate the customer identifier
             RuleFor(x => x.CustomerId)
-                .NotEmpty().WithMessage("O ID do cliente é obrigatório.");
-
+                .NotEmpty().WithMessage("The customer ID is required.");
         }
     }
 }

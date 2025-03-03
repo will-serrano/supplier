@@ -1,39 +1,55 @@
-﻿using Serilog;
-using Supplier.Transactions.HttpClients.Dto;
+﻿using Supplier.Transactions.HttpClients.Dto;
 using Supplier.Transactions.HttpClients.Interfaces;
 using Supplier.Transactions.Models;
 
 namespace Supplier.Transactions.HttpClients
 {
+    /// <summary>
+    /// Client for validating customers via an external API.
+    /// </summary>
     public class CustomerValidationClient : ICustomerValidationClient
     {
         private readonly HttpClient _httpClient;
+        private readonly ILogger<CustomerValidationClient> _logger;
 
-        public CustomerValidationClient(HttpClient httpClient)
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CustomerValidationClient"/> class.
+        /// </summary>
+        /// <param name="httpClient">The HTTP client instance.</param>
+        /// <param name="logger">The logger instance.</param>
+        public CustomerValidationClient(HttpClient httpClient, ILogger<CustomerValidationClient> logger)
         {
             _httpClient = httpClient;
+            _logger = logger;
         }
 
+        /// <summary>
+        /// Validates a customer based on the provided transaction request.
+        /// </summary>
+        /// <param name="transactionRequest">The transaction request containing customer details.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result contains the validation result.</returns>
         public async Task<CustomerValidationResultDto> ValidateCustomerAsync(TransactionRequest transactionRequest)
         {
             try
             {
+                _logger.LogInformation("Starting customer validation for CustomerId: {CustomerId}", transactionRequest.CustomerId);
                 var response = await _httpClient.GetAsync($"/api/customers/{transactionRequest.CustomerId}/validate/{transactionRequest.Amount}");
-                response.EnsureSuccessStatusCode(); // Lança exceção se o status não for sucesso
+                response.EnsureSuccessStatusCode(); // Throws an exception if the status is not successful
 
                 var result = await response.Content.ReadFromJsonAsync<CustomerValidationResultDto>();
-                return result ?? new CustomerValidationResultDto { IsValid = false, Message = "Resposta vazia" };
+                _logger.LogInformation("Customer validation completed for CustomerId: {CustomerId}", transactionRequest.CustomerId);
+                return result ?? new CustomerValidationResultDto { IsValid = false, Message = "Empty response" };
             }
             catch (HttpRequestException ex)
             {
-                Log.Error(ex, "Erro ao chamar a API de validação para o cliente {CustomerId}", transactionRequest.CustomerId);
-                // Você pode optar por retornar um resultado indicando falha ou relançar a exceção
-                return new CustomerValidationResultDto { IsValid = false, Message = "Erro na validação" };
+                _logger.LogError(ex, "Error calling validation API for CustomerId: {CustomerId}", transactionRequest.CustomerId);
+                // You can choose to return a result indicating failure or rethrow the exception
+                return new CustomerValidationResultDto { IsValid = false, Message = "Validation error" };
             }
             catch (Exception ex)
             {
-                Log.Error(ex, "Erro inesperado na validação do cliente {CustomerId}", transactionRequest.CustomerId);
-                return new CustomerValidationResultDto { IsValid = false, Message = "Erro inesperado" };
+                _logger.LogError(ex, "Unexpected error during customer validation for CustomerId: {CustomerId}", transactionRequest.CustomerId);
+                return new CustomerValidationResultDto { IsValid = false, Message = "Unexpected error" };
             }
         }
     }

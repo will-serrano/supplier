@@ -6,7 +6,7 @@ namespace Supplier.Customers.Repositories.Interfaces
     {
         Task<bool> ExistsAsync(string cpf);
         Task AddAsync(Customer customer);
-        Task<IEnumerable<Customer>> GetAllAsync();
+        Task<IEnumerable<Customer>?> GetAllAsync();
         Task<Customer?> GetCustomerByIdAsync(Guid customerId);
         Task UpdateCustomerAsync(Customer customer);
     }

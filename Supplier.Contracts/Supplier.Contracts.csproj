@@ -5,9 +5,9 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <PackageId>Supplier.Contracts</PackageId>
-    <Version>1.0.1</Version>
-    <Authors>SeuNome</Authors>
-    <Company>SeuNomeOuEmpresa</Company>
+    <Version>1.0.2</Version>
+    <Authors>Willian</Authors>
+    <Company>WillianSerrano</Company>
     <Description>Biblioteca de contratos para comunicação via RabbitMQ</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/seu-repo</RepositoryUrl>
