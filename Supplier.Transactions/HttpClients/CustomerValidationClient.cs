@@ -28,6 +28,7 @@ namespace Supplier.Transactions.HttpClients
         /// Validates a customer based on the provided transaction request.
         /// </summary>
         /// <param name="transactionRequest">The transaction request containing customer details.</param>
+        /// <param name="token">The authentication token for the API request.</param>
         /// <returns>A task that represents the asynchronous operation. The task result contains the validation result.</returns>
         public async Task<CustomerValidationResultDto> ValidateCustomerAsync(TransactionRequest transactionRequest, string token)
         {

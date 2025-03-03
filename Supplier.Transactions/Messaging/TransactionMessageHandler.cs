@@ -50,7 +50,7 @@ namespace Supplier.Transactions.Messaging
             {
                 _logger.LogError("Transaction rejected: {TransactionId} - Message: {Message}", transactionData.TransactionId, transactionData.Message);
 
-                await _transactionRequestRepository.UpdateTransactionRequestAsync(transactionData.TransactionId, transactionData.Message);
+                await _transactionRequestRepository.UpdateTransactionRequestAsync(transactionData.TransactionId, transactionData.Message ?? string.Empty);
                 return;
             }
 

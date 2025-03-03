@@ -1,5 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Supplier.Auth.Dto.Requests;
 using Supplier.Auth.Services.Interfaces;
 

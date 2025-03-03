@@ -21,11 +21,12 @@ namespace Supplier.Customers.Controllers
         /// Initializes a new instance of the <see cref="CustomerController"/> class.
         /// </summary>
         /// <param name="service">The customer service.</param>
+        /// <param name="logger">The logger instance.</param>
         /// <exception cref="ArgumentNullException">Thrown when the service is null.</exception>
         public CustomerController(ICustomerService service, ILogger<CustomerController> logger)
         {
             _service = service ?? throw new ArgumentNullException(nameof(service));
-            _logger = logger;
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         /// <summary>

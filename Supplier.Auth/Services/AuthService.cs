@@ -35,6 +35,9 @@ namespace Supplier.Auth.Services
         /// <returns>A task that represents the asynchronous operation. The task result contains the registration response.</returns>
         public async Task<RegisterResponseDto> RegisterUser(RegisterRequestDto request)
         {
+            if (string.IsNullOrEmpty(request.Email))
+                return new RegisterResponseDto(Guid.Empty, "Email is required.");
+
             var userExists = await _userRepository.UserExists(request.Email);
             if (userExists == true)
                 return new RegisterResponseDto(Guid.Empty, "User already registered.");
@@ -43,10 +46,7 @@ namespace Supplier.Auth.Services
             if (userId == null || userId == Guid.Empty)
                 return new RegisterResponseDto(Guid.Empty, "Error creating user.");
 
-            // Se o usuário não informar nenhuma role, defina como "user"
             var roles = request.Roles?.Count > 0 ? request.Roles : new List<string> { "user" };
-
-            // Atribuir roles ao usuário
             await _userRepository.AssignRolesToUser(userId.Value, roles);
 
             return new RegisterResponseDto(userId.Value, "User successfully registered.");
@@ -62,16 +62,24 @@ namespace Supplier.Auth.Services
             var user = await _userRepository.GetUserByEmail(request.Email);
             if (user == null || !await _userRepository.VerifyPassword(request.Email, request.Password))
             {
+                _logger.LogWarning("Invalid email or password.");
                 return LoginResponseDto.WithMessage("Invalid email or password.");
             }
 
-            var roles = await _userRepository.GetUserRoles(user.Id);
+            if (!user.Id.HasValue)
+            {
+                _logger.LogWarning("Error retrieving user Id.");
+                return LoginResponseDto.WithMessage("Error retrieving user Id.");
+            }
+
+            var roles = await _userRepository.GetUserRoles(user.Id.Value);
             if (roles == null)
             {
+                _logger.LogWarning("Error retrieving user roles.");
                 return LoginResponseDto.WithMessage("Error retrieving user roles.");
             }
 
-            string token = _jwtService.GenerateToken(user.Id, user.Email, roles);
+            string token = _jwtService.GenerateToken(user.Id.Value, user.Email, roles);
 
             return LoginResponseDto.WithToken(token);
         }
@@ -84,6 +92,9 @@ namespace Supplier.Auth.Services
         /// <returns>A task that represents the asynchronous operation. The task result contains the registration response.</returns>
         public async Task<RegisterResponseDto> RegisterAdminUser(RegisterAdminRequestDto request, ClaimsPrincipal currentUser)
         {
+            if (string.IsNullOrEmpty(request.Email))
+                return new RegisterResponseDto(Guid.Empty, "Email is required.");
+
             var adminIdClaim = currentUser.FindFirst(ClaimTypes.NameIdentifier);
             if (adminIdClaim == null)
             {
@@ -103,6 +114,9 @@ namespace Supplier.Auth.Services
             var userExists = await _userRepository.UserExists(request.Email);
             if (userExists == true)
                 return new RegisterResponseDto(Guid.Empty, "User already registered.");
+
+            if (string.IsNullOrEmpty(request.Password))
+                return new RegisterResponseDto(Guid.Empty, "Password is required.");
 
             var userId = await _userRepository.CreateUser(request.Email, request.Password);
             if (userId == null || userId == Guid.Empty)

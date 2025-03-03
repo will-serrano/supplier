@@ -42,11 +42,8 @@ namespace Supplier.Transactions.Repositories
                                          WHERE CustomerId = @CustomerId 
                                            AND CustomerBlocked = 1) AS HasBlocked";
 
-            using var connection = _dbConnectionFactory.CreateConnection();
-            if (connection == null)
-            {
-                throw new InvalidOperationException("Database connection could not be established.");
-            }
+            using var connection = _dbConnectionFactory.CreateConnection()
+                ?? throw new InvalidOperationException("Database connection could not be established.");
             var result = await _dapperWrapper.QueryFirstOrDefaultAsync<int>(connection, new CommandDefinition(query, new { CustomerId = customerId }));
 
             return result == 1;
@@ -66,7 +63,8 @@ namespace Supplier.Transactions.Repositories
                             VALUES (@Id, @CustomerId, @Amount, @Status, @RequestedBy, @RequestedAt, @CustomerBlocked);
                             SELECT * FROM TransactionRequests WHERE Id = @Id;";
 
-            using var connection = _dbConnectionFactory.CreateConnection();
+            using var connection = _dbConnectionFactory.CreateConnection()
+                ?? throw new InvalidOperationException("Database connection could not be established.");
             var insertedTransaction = await _dapperWrapper.QueryFirstOrDefaultAsync<TransactionRequest>(connection, new CommandDefinition(insertQuery, new
             {
                 transaction.Id,
@@ -107,7 +105,8 @@ namespace Supplier.Transactions.Repositories
                                 Detail = @Detail 
                             WHERE Id = @Id;";
 
-            using var connection = _dbConnectionFactory.CreateConnection();
+            using var connection = _dbConnectionFactory.CreateConnection()
+                ?? throw new InvalidOperationException("Database connection could not be established.");
             await _dapperWrapper.ExecuteAsync(connection, new CommandDefinition(updateQuery, new
             {
                 transactionRequest.Id,
@@ -136,7 +135,8 @@ namespace Supplier.Transactions.Repositories
                                 CustomerBlocked = @CustomerBlocked
                             WHERE TransactionId = @TransactionId;";
 
-            using var connection = _dbConnectionFactory.CreateConnection();
+            using var connection = _dbConnectionFactory.CreateConnection()
+                ?? throw new InvalidOperationException("Database connection could not be established.");
             await _dapperWrapper.ExecuteAsync(connection, new CommandDefinition(updateStatusQuery, new
             {
                 TransactionId = transactionId,
@@ -165,7 +165,8 @@ namespace Supplier.Transactions.Repositories
                                 CustomerBlocked = @CustomerBlocked
                             WHERE Id = @TransactionId;";
 
-            using var connection = _dbConnectionFactory.CreateConnection();
+            using var connection = _dbConnectionFactory.CreateConnection()
+                ?? throw new InvalidOperationException("Database connection could not be established.");
             await _dapperWrapper.ExecuteAsync(connection, new CommandDefinition(updateFailureQuery, new
             {
                 TransactionId = transactionId.ToString(),

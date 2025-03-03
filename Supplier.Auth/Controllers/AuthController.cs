@@ -1,10 +1,12 @@
-﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Supplier.Auth.Dto.Requests;
 using Supplier.Auth.Services.Interfaces;
 
 namespace Supplier.Auth.Controllers
 {
+    /// <summary>
+    /// Controller for handling authentication-related actions.
+    /// </summary>
     [Route("api/auth")]
     [ApiController]
     public class AuthController : ControllerBase
@@ -56,7 +58,7 @@ namespace Supplier.Auth.Controllers
             _logger.LogInformation("Login attempt for email: {Email}", request.Email);
 
             var response = await _authService.AuthenticateUser(request);
-            
+
             if (response.Token == null)
             {
                 _logger.LogWarning("Login failed for email: {Email}", request.Email);

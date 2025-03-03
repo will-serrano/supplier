@@ -24,7 +24,7 @@ namespace Supplier.Transactions.Tests.Controllers
             _mockTransactionService = new Mock<ITransactionRequestService>();
             _mockTokenHandlerWrapper = new Mock<IJwtSecurityTokenHandlerWrapper>();
             _mockLogger = new Mock<ILogger<TransactionController>>();
-            _controller = new TransactionController(_mockTransactionService.Object, _mockLogger.Object, _mockTokenHandlerWrapper.Object);
+            _controller = new TransactionController(_mockTransactionService.Object, _mockLogger.Object);
         }
 
         [Fact]

@@ -5,7 +5,6 @@ using Supplier.Transactions.Dto.Requests;
 using Supplier.Transactions.Dto.Responses;
 using Supplier.Transactions.HttpClients.Interfaces;
 using Supplier.Transactions.Mappers.Interfaces;
-using Supplier.Transactions.Messaging;
 using Supplier.Transactions.Messaging.Interfaces;
 using Supplier.Transactions.Repositories.Interfaces;
 using Supplier.Transactions.Services.Interfaces;
@@ -34,6 +33,7 @@ namespace Supplier.Transactions.Services
         /// <param name="mapper">The mapper for transaction requests.</param>
         /// <param name="messagePublisher">The publisher for customer messages.</param>
         /// <param name="customerValidationClient">The client for customer validation.</param>
+        /// <param name="tokenHandlerWrapper">The token handler wrapper.</param>
         /// <param name="logger">The logger for logging information.</param>
         public TransactionRequestService(
             IValidator<TransactionRequestDto> validator,
@@ -57,6 +57,8 @@ namespace Supplier.Transactions.Services
         /// Simulates a transaction asynchronously.
         /// </summary>
         /// <param name="dto">The transaction request DTO.</param>
+        /// <param name="userId">The user ID.</param>
+        /// <param name="token">The authorization token.</param>
         /// <returns>A task that represents the asynchronous operation. The task result contains the transaction response DTO.</returns>
         public async Task<TransactionResponseDto> RequestTransactionAsync(TransactionRequestDto dto, Guid userId, string token)
         {
@@ -68,6 +70,11 @@ namespace Supplier.Transactions.Services
             {
                 _logger.LogWarning("Validation failed for CustomerId: {CustomerId}. Errors: {Errors}", dto.CustomerId, validationResult.Errors);
                 throw new ValidationException(validationResult.Errors);
+            }
+
+            if (string.IsNullOrEmpty(dto.CustomerId))
+            {
+                throw new ArgumentNullException(nameof(dto.CustomerId), "CustomerId cannot be null or empty");
             }
 
             var isCustomerBlocked = await _transactionRequestRepository.IsCustomerBlockedAsync(dto.CustomerId);
@@ -130,37 +137,46 @@ namespace Supplier.Transactions.Services
             return new TransactionResponseDto { Status = "APROVADO", TransactionId = transactionRequest.TransactionId };
         }
 
+        /// <summary>
+        /// Validates the transaction request.
+        /// </summary>
+        /// <param name="request">The transaction request DTO.</param>
+        /// <param name="token">The authorization token.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result contains a tuple with validation result, error message, and user ID.</returns>
         public async Task<(bool IsValid, string ErrorMessage, Guid UserId)> ValidateRequest(TransactionRequestDto request, string token)
         {
-            if (request == null)
+            return await Task.Run(() =>
             {
-                return (false, "Request cannot be null", Guid.Empty);
-            }
+                if (request == null)
+                {
+                    return (false, "Request cannot be null", Guid.Empty);
+                }
 
-            if (string.IsNullOrEmpty(token))
-            {
-                return (false, "Authorization token is missing or empty", Guid.Empty);
-            }
+                if (string.IsNullOrEmpty(token))
+                {
+                    return (false, "Authorization token is missing or empty", Guid.Empty);
+                }
 
-            var jwtToken = _tokenHandlerWrapper.ReadJwtToken(token);
-            var userIdClaim = jwtToken.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier || c.Type == "sub");
-            var userId = string.Empty;
-            if (userIdClaim != null)
-            {
-                userId = userIdClaim.Value;
-            }
+                var jwtToken = _tokenHandlerWrapper.ReadJwtToken(token);
+                var userIdClaim = jwtToken.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier || c.Type == "sub");
+                var userId = string.Empty;
+                if (userIdClaim != null)
+                {
+                    userId = userIdClaim.Value;
+                }
 
-            if (string.IsNullOrEmpty(userId))
-            {
-                return (false, "User ID not found", Guid.Empty);
-            }
+                if (string.IsNullOrEmpty(userId))
+                {
+                    return (false, "User ID not found", Guid.Empty);
+                }
 
-            if (!Guid.TryParse(userId, out var userGuid))
-            {
-                return (false, "Invalid User ID format", Guid.Empty);
-            }
+                if (!Guid.TryParse(userId, out var userGuid))
+                {
+                    return (false, "Invalid User ID format", Guid.Empty);
+                }
 
-            return (true, string.Empty, userGuid);
+                return (true, string.Empty, userGuid);
+            });
         }
     }
 }

@@ -24,6 +24,7 @@ namespace Supplier.Customers.Messaging
         /// <param name="customerRepository">The customer repository.</param>
         /// <param name="bus">The bus.</param>
         /// <param name="logger">The logger.</param>
+        /// <param name="customerCache">Cache.</param>
         public CustomerMessageHandler(ICustomerRepository customerRepository, IBus bus, ILogger<CustomerMessageHandler> logger, IMemoryCache customerCache)
         {
             _customerRepository = customerRepository ?? throw new ArgumentNullException(nameof(customerRepository));
@@ -76,6 +77,13 @@ namespace Supplier.Customers.Messaging
             await SendSuccessResponse(transactionData.TransactionId, customer.CreditLimit);
         }
 
+        /// <summary>
+        /// Sends a failure response to the transactions service.
+        /// </summary>
+        /// <param name="transactionId"></param>
+        /// <param name="message"></param>
+        /// <param name="newLimit"></param>
+        /// <returns></returns>
         private async Task SendFailureResponse(Guid transactionId, string message, decimal newLimit = 0)
         {
             var response = new TransactionResponseMessageData
@@ -96,6 +104,12 @@ namespace Supplier.Customers.Messaging
             await _bus.Advanced.Routing.Send(RoutingKeys.CustomersToTransactions, messageToSend);
         }
 
+        /// <summary>
+        /// Sends a success response to the transactions service.
+        /// </summary>
+        /// <param name="transactionId"></param>
+        /// <param name="newLimit"></param>
+        /// <returns></returns>
         private async Task SendSuccessResponse(Guid transactionId, decimal newLimit)
         {
             var responseData = new TransactionResponseMessageData

@@ -1,10 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Supplier.Transactions.Configuration.Interfaces;
 using Supplier.Transactions.Dto.Requests;
 using Supplier.Transactions.Services.Interfaces;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
 
 namespace Supplier.Transactions.Controllers
 {
@@ -18,7 +15,6 @@ namespace Supplier.Transactions.Controllers
     {
         private readonly ITransactionRequestService _transactionService;
         private readonly ILogger<TransactionController> _logger;
-        private readonly IJwtSecurityTokenHandlerWrapper _tokenHandlerWrapper;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="TransactionController"/> class.
@@ -26,19 +22,18 @@ namespace Supplier.Transactions.Controllers
         /// <param name="transactionService">The transaction service.</param>
         /// <param name="logger">The logger instance.</param>
         /// <exception cref="ArgumentNullException">Thrown when transactionService is null.</exception>
-        public TransactionController(ITransactionRequestService transactionService, ILogger<TransactionController> logger, IJwtSecurityTokenHandlerWrapper tokenHandlerWrapper)
+        public TransactionController(ITransactionRequestService transactionService, ILogger<TransactionController> logger)
         {
             _transactionService = transactionService ?? throw new ArgumentNullException(nameof(transactionService));
             _logger = logger;
-            _tokenHandlerWrapper = tokenHandlerWrapper;
-        }
+        }
 
         /// <summary>
         /// Simulates a transaction request.
         /// </summary>
         /// <param name="request">The transaction request data transfer object.</param>
         /// <returns>An <see cref="IActionResult"/> representing the result of the operation.</returns>
-        [HttpPost("simular")]
+        [HttpPost("requesttransaction")]
         public async Task<IActionResult> RequestTransaction([FromBody] TransactionRequestDto request)
         {
             if (request == null)

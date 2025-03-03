@@ -118,7 +118,7 @@ namespace Supplier.Auth.Tests.Services
             var user = new User { Id = Guid.NewGuid(), Email = request.Email, PasswordHash = "hashed_password" };
             _userRepositoryMock.Setup(repo => repo.GetUserByEmail(request.Email)).ReturnsAsync(user);
             _userRepositoryMock.Setup(repo => repo.VerifyPassword(request.Email, request.Password)).ReturnsAsync(true);
-            _userRepositoryMock.Setup(repo => repo.GetUserRoles(user.Id)).ReturnsAsync((IEnumerable<string>?)null);
+            _userRepositoryMock.Setup(repo => repo.GetUserRoles(user.Id!.Value)).ReturnsAsync((IEnumerable<string>?)null);
 
             // Act
             var result = await _authService.AuthenticateUser(request);
@@ -142,8 +142,8 @@ namespace Supplier.Auth.Tests.Services
             var token = "valid.jwt.token";
             _userRepositoryMock.Setup(repo => repo.GetUserByEmail(request.Email)).ReturnsAsync(user);
             _userRepositoryMock.Setup(repo => repo.VerifyPassword(request.Email, request.Password)).ReturnsAsync(true);
-            _userRepositoryMock.Setup(repo => repo.GetUserRoles(user.Id)).ReturnsAsync(roles);
-            _tokenMock.Setup(jwt => jwt.GenerateToken(user.Id, user.Email, roles)).Returns(token);
+            _userRepositoryMock.Setup(repo => repo.GetUserRoles(user.Id!.Value)).ReturnsAsync(roles);
+            _tokenMock.Setup(jwt => jwt.GenerateToken(user.Id!.Value, user.Email, roles)).Returns(token);
 
             // Act
             var result = await _authService.AuthenticateUser(request);
