@@ -5,6 +5,7 @@ using Supplier.Transactions.Dto.Responses;
 using Supplier.Transactions.HttpClients.Interfaces;
 using Supplier.Transactions.Mappers.Interfaces;
 using Supplier.Transactions.Messaging;
+using Supplier.Transactions.Messaging.Interfaces;
 using Supplier.Transactions.Repositories.Interfaces;
 using Supplier.Transactions.Services.Interfaces;
 
@@ -18,7 +19,7 @@ namespace Supplier.Transactions.Services
         private readonly IValidator<TransactionRequestDto> _transactionRequestDtoValidator;
         private readonly ITransactionRequestRepository _transactionRequestRepository;
         private readonly ITransactionRequestMapper _transactionRequestMapper;
-        private readonly CustomerMessagePublisher _messagePublisher;
+        private readonly ICustomerMessagePublisher _messagePublisher;
         private readonly ICustomerValidationClient _customerValidationClient;
         private readonly ILogger<TransactionRequestService> _logger;
 
@@ -35,7 +36,7 @@ namespace Supplier.Transactions.Services
             IValidator<TransactionRequestDto> validator,
             ITransactionRequestRepository repository,
             ITransactionRequestMapper mapper,
-            CustomerMessagePublisher messagePublisher,
+            ICustomerMessagePublisher messagePublisher,
             ICustomerValidationClient customerValidationClient,
             ILogger<TransactionRequestService> logger)
         {

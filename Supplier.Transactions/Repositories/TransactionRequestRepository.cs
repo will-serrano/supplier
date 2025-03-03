@@ -3,7 +3,6 @@ using Supplier.Transactions.Configuration.Interfaces;
 using Supplier.Transactions.Enums;
 using Supplier.Transactions.Models;
 using Supplier.Transactions.Repositories.Interfaces;
-using System.Data;
 
 namespace Supplier.Transactions.Repositories
 {

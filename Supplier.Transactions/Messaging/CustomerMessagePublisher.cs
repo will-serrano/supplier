@@ -1,12 +1,13 @@
 ﻿using Rebus.Bus;
 using Supplier.Contracts.Transactions;
+using Supplier.Transactions.Messaging.Interfaces;
 
 namespace Supplier.Transactions.Messaging
 {
     /// <summary>
     /// Publishes customer messages to the appropriate queue.
     /// </summary>
-    public class CustomerMessagePublisher
+    public class CustomerMessagePublisher: ICustomerMessagePublisher
     {
         private readonly IBus _bus;
         private readonly ILogger<CustomerMessagePublisher> _logger;
