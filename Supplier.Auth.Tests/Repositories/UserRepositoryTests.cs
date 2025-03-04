@@ -358,16 +358,13 @@ namespace Supplier.Auth.Tests.Repositories
         }
 
         [Fact]
-        public async Task GetAllUsers_ConnectionFails_ShouldReturnEmptyList()
+        public async Task GetAllUsers_ConnectionFails_ShouldReturnError()
         {
             // Arrange
             _dbConnectionFactoryMock.Setup(f => f.CreateConnection()).Returns((IDbConnection?)null);
 
-            // Act
-            var result = await _userRepository.GetAllUsers();
-
-            // Assert
-            Assert.Empty(result);
+            // Act & Assert
+            await Assert.ThrowsAsync<InvalidOperationException>(() => _userRepository.GetAllUsers());
         }
 
     }

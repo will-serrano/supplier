@@ -149,11 +149,13 @@ namespace Supplier.Transactions.Services
             {
                 if (request == null)
                 {
+                    _logger.LogError("Validation failed: Request cannot be null");
                     return (false, "Request cannot be null", Guid.Empty);
                 }
 
                 if (string.IsNullOrEmpty(token))
                 {
+                    _logger.LogError("Validation failed: Authorization token is missing or empty");
                     return (false, "Authorization token is missing or empty", Guid.Empty);
                 }
 
@@ -167,14 +169,17 @@ namespace Supplier.Transactions.Services
 
                 if (string.IsNullOrEmpty(userId))
                 {
+                    _logger.LogError("Validation failed: User ID not found in token");
                     return (false, "User ID not found", Guid.Empty);
                 }
 
                 if (!Guid.TryParse(userId, out var userGuid))
                 {
+                    _logger.LogError("Validation failed: Invalid User ID format");
                     return (false, "Invalid User ID format", Guid.Empty);
                 }
 
+                _logger.LogInformation("Validation succeeded for User ID: {UserId}", userGuid);
                 return (true, string.Empty, userGuid);
             });
         }

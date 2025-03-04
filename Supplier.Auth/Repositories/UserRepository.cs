@@ -171,11 +171,8 @@ namespace Supplier.Auth.Repositories
         /// <param name="roles">The list of roles to assign.</param>
         public async Task AssignRolesToUser(Guid userId, List<string> roles)
         {
-            using var connection = _dbConnectionFactory.CreateConnection();
-            if (connection == null)
-            {
-                throw new InvalidOperationException("Database connection is not available.");
-            }
+            using var connection = _dbConnectionFactory.CreateConnection()
+                ?? throw new InvalidOperationException("Database connection is not available.");
 
             var roleNames = roles.Select(role => role.ToUpper()).ToList();
             var existingRoles = await _dapperWrapper.QueryAsync<Role>(connection, new CommandDefinition("SELECT * FROM Roles WHERE upper(Name) IN @Names", new { Names = roleNames }));
@@ -194,18 +191,25 @@ namespace Supplier.Auth.Repositories
             }
         }
 
+        /// <summary>
+        /// Retrieves all users.
+        /// </summary>
+        /// <returns></returns>
+        /// <exception cref="InvalidOperationException"></exception>
         public async Task<IEnumerable<UserResponseDto>> GetAllUsers()
         {
-            using var connection = _dbConnectionFactory.CreateConnection();
-            if (connection == null)
-            {
-                _logger.LogError("Failed to create a connection to the database.");
-                return Enumerable.Empty<UserResponseDto>();
-            }
+            using var connection = _dbConnectionFactory.CreateConnection()
+                ?? throw new InvalidOperationException("Database connection is not available.");
 
             return await _dapperWrapper.QueryAsync<UserResponseDto>(connection, new CommandDefinition("SELECT Id, Email FROM Users"));
         }
 
+        /// <summary>
+        /// Checks if a user is in a specific role.
+        /// </summary>
+        /// <param name="userId"></param>
+        /// <param name="role"></param>
+        /// <returns></returns>
         public async Task<bool> IsUserInRole(Guid userId, string role)
         {
             using var connection = _dbConnectionFactory.CreateConnection();

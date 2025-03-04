@@ -110,10 +110,13 @@ namespace Supplier.Customers.Services
         /// <returns>A task that represents the asynchronous operation. The task result contains the customer validation response DTO.</returns>
         public async Task<CustomerValidationResponseDto> ValidateCustomerAsync(Guid customerId, decimal amount)
         {
-            var customers = await _customerRepository.GetAllAsync() ?? [];
+            _logger.LogInformation("Starting customer validation for ID: {CustomerId} with amount: {Amount}", customerId, amount);
+
+            var customers = await _customerRepository.GetAllAsync() ?? Array.Empty<Customer>();
             var customer = customers.FirstOrDefault(c => c.Id == customerId);
             if (customer == null)
             {
+                _logger.LogWarning("Customer with ID: {CustomerId} not found.", customerId);
                 return new CustomerValidationResponseDto
                 {
                     IsValid = false,
@@ -123,6 +126,7 @@ namespace Supplier.Customers.Services
 
             if (customer.CreditLimit < amount)
             {
+                _logger.LogWarning("Customer with ID: {CustomerId} has insufficient credit limit. Required: {Amount}, Available: {CreditLimit}", customerId, amount, customer.CreditLimit);
                 return new CustomerValidationResponseDto
                 {
                     IsValid = false,
@@ -130,6 +134,7 @@ namespace Supplier.Customers.Services
                 };
             }
 
+            _logger.LogInformation("Customer with ID: {CustomerId} successfully validated.", customerId);
             return new CustomerValidationResponseDto
             {
                 IsValid = true,

@@ -1,8 +1,6 @@
 ﻿using Rebus.Handlers;
 using Supplier.Contracts.Transactions;
 using Supplier.Contracts.Transactions.Responses;
-using Supplier.Transactions.Enums;
-using Supplier.Transactions.Models;
 using Supplier.Transactions.Repositories.Interfaces;
 
 namespace Supplier.Transactions.Messaging

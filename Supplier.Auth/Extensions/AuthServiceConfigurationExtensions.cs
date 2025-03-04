@@ -18,8 +18,17 @@ using System.Reflection;
 
 namespace Supplier.Auth.Extensions
 {
+    /// <summary>
+    /// Extension methods for configuring the authentication service.
+    /// </summary>
     public static class AuthServiceConfigurationExtensions
     {
+        /// <summary>
+        /// Configures Serilog logging.
+        /// </summary>
+        /// <param name="services"></param>
+        /// <param name="configuration"></param>
+        /// <returns></returns>
         public static IServiceCollection ConfigureSerilogLogging(this IServiceCollection services, IConfiguration configuration)
         {
             Log.Logger = new LoggerConfiguration()
@@ -27,13 +36,19 @@ namespace Supplier.Auth.Extensions
                 .WriteTo.Seq("http://localhost:5341")
                 .CreateLogger();
 
-            // Configuração adicional, se necessário, pode ser incluída aqui.
+            // Additional configuration, if necessary, can be included here.
             return services;
         }
 
+        /// <summary>
+        /// Configures JWT authentication.
+        /// </summary>
+        /// <param name="services"></param>
+        /// <param name="configuration"></param>
+        /// <returns></returns>
         public static IServiceCollection ConfigureJwtAuthentication(this IServiceCollection services, IConfiguration configuration)
         {
-            // Carrega as configurações do JWT a partir do appsettings
+            // Loads JWT settings from appsettings
             var jwtSettings = new JwtSettings();
             configuration.GetSection("JwtSettings").Bind(jwtSettings);
             services.Configure<JwtSettings>(configuration.GetSection("JwtSettings"));
@@ -57,6 +72,12 @@ namespace Supplier.Auth.Extensions
             return services;
         }
 
+        /// <summary>
+        /// Configures dependencies for the authentication service.
+        /// </summary>
+        /// <param name="services"></param>
+        /// <param name="configuration"></param>
+        /// <returns></returns>
         public static IServiceCollection ConfigureDependencies(this IServiceCollection services, IConfiguration configuration)
         {
             services.AddEndpointsApiExplorer();
@@ -66,13 +87,13 @@ namespace Supplier.Auth.Extensions
                 {
                     Title = "Supplier.Auth API",
                     Version = "v1",
-                    Description = "API para autenticação da Supplier."
+                    Description = "API for Supplier authentication."
                 });
 
                 c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
                 {
                     In = ParameterLocation.Header,
-                    Description = "Insira o token JWT no formato: Bearer {seu_token}",
+                    Description = "Enter JWT token in the format: Bearer {your_token}",
                     Name = "Authorization",
                     Type = SecuritySchemeType.Http,
                     Scheme = "Bearer"
@@ -80,17 +101,17 @@ namespace Supplier.Auth.Extensions
 
                 c.AddSecurityRequirement(new OpenApiSecurityRequirement
                 {
-                    {
-                        new OpenApiSecurityScheme
                         {
-                            Reference = new OpenApiReference
+                            new OpenApiSecurityScheme
                             {
-                                Type = ReferenceType.SecurityScheme,
-                                Id = "Bearer"
-                            }
-                        },
-                        new string[] {}
-                    }
+                                Reference = new OpenApiReference
+                                {
+                                    Type = ReferenceType.SecurityScheme,
+                                    Id = "Bearer"
+                                }
+                            },
+                            new string[] {}
+                        }
                 });
 
                 var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
@@ -113,22 +134,33 @@ namespace Supplier.Auth.Extensions
             return services;
         }
 
+        /// <summary>
+        /// Configures FluentMigrator for database migrations.
+        /// </summary>
+        /// <param name="services"></param>
+        /// <param name="configuration"></param>
+        /// <returns></returns>
         public static IServiceCollection ConfigureFluentMigrator(this IServiceCollection services, IConfiguration configuration)
         {
-            // Recupera a connection string e configura o FluentMigrator para SQLite
+            // Retrieves the connection string and configures FluentMigrator for SQLite
             string connectionString = ConnectionStringHelper.GetSqliteConnectionString(configuration);
 
             services.AddFluentMigratorCore()
                 .ConfigureRunner(rb => rb
-                    .AddSQLite()  // Provider para SQLite
+                    .AddSQLite()  // Provider for SQLite
                     .WithGlobalConnectionString(connectionString)
-                    // Escaneia a assembly atual para encontrar as migrações
+                    // Scans the current assembly to find migrations
                     .ScanIn(typeof(Program).Assembly).For.Migrations())
                 .AddLogging(lb => lb.AddFluentMigratorConsole());
 
             return services;
         }
 
+        /// <summary>
+        /// Configures controllers for the authentication service.
+        /// </summary>
+        /// <param name="services"></param>
+        /// <returns></returns>
         public static IServiceCollection ConfigureControllers(this IServiceCollection services)
         {
             services.AddControllers();

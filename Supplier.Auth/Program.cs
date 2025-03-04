@@ -5,6 +5,7 @@ using Supplier.Auth.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Configure Serilog for logging
 builder.Host.UseSerilog((context, services, configuration) => configuration
     .ReadFrom.Configuration(context.Configuration)
     .ReadFrom.Services(services)
@@ -12,7 +13,7 @@ builder.Host.UseSerilog((context, services, configuration) => configuration
     .WriteTo.Console()
 );
 
-// Configura as dependências e serviços usando os métodos de extensão
+// Configure dependencies and services using extension methods
 builder.Services
     .ConfigureSerilogLogging(builder.Configuration)
     .ConfigureJwtAuthentication(builder.Configuration)
@@ -22,26 +23,29 @@ builder.Services
 
 var app = builder.Build();
 
-// Executa as migrações do FluentMigrator
+// Execute FluentMigrator migrations
 using (var scope = app.Services.CreateScope())
 {
     var runner = scope.ServiceProvider.GetRequiredService<IMigrationRunner>();
     runner.MigrateUp();
 }
 
+// Add custom type handler for Dapper
 Dapper.SqlMapper.AddTypeHandler(new GuidTypeHandler());
 
-// Configura os middlewares
+// Configure middlewares
 app.UseSerilogRequestLogging();
 app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 
+// Configure Swagger for development environment
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
+// Run the application
 app.Run();

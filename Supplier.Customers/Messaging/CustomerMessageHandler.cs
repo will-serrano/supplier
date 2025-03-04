@@ -86,6 +86,8 @@ namespace Supplier.Customers.Messaging
         /// <returns></returns>
         private async Task SendFailureResponse(Guid transactionId, string message, decimal newLimit = 0)
         {
+            _logger.LogError("Sending failure response for TransactionId: {TransactionId}, Message: {Message}, NewLimit: {NewLimit}", transactionId, message, newLimit);
+
             var response = new TransactionResponseMessageData
             {
                 TransactionId = transactionId,
@@ -112,6 +114,8 @@ namespace Supplier.Customers.Messaging
         /// <returns></returns>
         private async Task SendSuccessResponse(Guid transactionId, decimal newLimit)
         {
+            _logger.LogInformation("Sending success response for TransactionId: {TransactionId}, NewLimit: {NewLimit}", transactionId, newLimit);
+
             var responseData = new TransactionResponseMessageData
             {
                 TransactionId = transactionId,

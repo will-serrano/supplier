@@ -57,8 +57,20 @@ namespace Supplier.Auth.Controllers.Internal
         public async Task<IActionResult> GetAllUsers()
         {
             var currentUser = HttpContext.User;
-            var users = await _authService.GetAllUsers(currentUser);
-            return Ok(users);
+            var userName = currentUser.Identity?.Name ?? "Unknown";
+            _logger.LogInformation("User {User} is attempting to retrieve all users.", userName);
+
+            try
+            {
+                var users = await _authService.GetAllUsers(currentUser);
+                _logger.LogInformation("Successfully retrieved all users for user: {User}", userName);
+                return Ok(users);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An error occurred while retrieving all users for user: {User}", userName);
+                return StatusCode(500, "An error occurred while retrieving users.");
+            }
         }
     }
 }

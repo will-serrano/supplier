@@ -32,8 +32,17 @@ using System.Text;
 
 namespace Supplier.Transactions.Extensions
 {
+    /// <summary>
+    /// Extension methods for configuring services in the Supplier.Transactions project.
+    /// </summary>
     public static class TransactionsServiceConfigurationExtensions
     {
+        /// <summary>
+        /// Configures Serilog logging for the application.
+        /// </summary>
+        /// <param name="services">The IServiceCollection to add the logging to.</param>
+        /// <param name="configuration">The IConfiguration to read the logging settings from.</param>
+        /// <returns>The IServiceCollection with Serilog logging configured.</returns>
         public static IServiceCollection ConfigureSerilogLogging(this IServiceCollection services, IConfiguration configuration)
         {
             Log.Logger = new LoggerConfiguration()
@@ -41,10 +50,15 @@ namespace Supplier.Transactions.Extensions
                 .WriteTo.Seq("http://localhost:5341")
                 .CreateLogger();
 
-            // Configuração adicional, se necessário, pode ser incluída aqui.
+            // Additional configuration, if necessary, can be included here.
             return services;
         }
 
+        /// <summary>
+        /// Configures FluentValidation for the application.
+        /// </summary>
+        /// <param name="services">The IServiceCollection to add FluentValidation to.</param>
+        /// <returns>The IServiceCollection with FluentValidation configured.</returns>
         public static IServiceCollection ConfigureFluentValidation(this IServiceCollection services)
         {
             services.AddFluentValidationAutoValidation();
@@ -52,6 +66,13 @@ namespace Supplier.Transactions.Extensions
             return services;
         }
 
+        /// <summary>
+        /// Configures HTTP clients for the application.
+        /// </summary>
+        /// <param name="services">The IServiceCollection to add the HTTP clients to.</param>
+        /// <param name="configuration">The IConfiguration to read the HTTP client settings from.</param>
+        /// <returns>The IServiceCollection with HTTP clients configured.</returns>
+        /// <exception cref="ArgumentNullException">Thrown when the base address for the Customer API is not configured.</exception>
         public static IServiceCollection ConfigureHttpClients(this IServiceCollection services, IConfiguration configuration)
         {
             services.Configure<CustomerApiOptions>(configuration.GetSection("CustomerApi"));
@@ -86,7 +107,12 @@ namespace Supplier.Transactions.Extensions
             return services;
         }
 
-
+        /// <summary>
+        /// Configures JWT authentication for the application.
+        /// </summary>
+        /// <param name="services">The IServiceCollection to add JWT authentication to.</param>
+        /// <param name="configuration">The IConfiguration to read the JWT settings from.</param>
+        /// <returns>The IServiceCollection with JWT authentication configured.</returns>
         public static IServiceCollection ConfigureJwtAuthentication(this IServiceCollection services, IConfiguration configuration)
         {
             var jwtSettings = new JwtSettings();
@@ -113,7 +139,7 @@ namespace Supplier.Transactions.Extensions
                         OnAuthenticationFailed = context =>
                         {
                             var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
-                            logger.LogError("Token inválido: {Message}", context.Exception.Message);
+                            logger.LogError("Invalid token: {Message}", context.Exception.Message);
                             return Task.CompletedTask;
                         }
                     };
@@ -124,28 +150,45 @@ namespace Supplier.Transactions.Extensions
             return services;
         }
 
+        /// <summary>
+        /// Configures FluentMigrator for the application.
+        /// </summary>
+        /// <param name="services">The IServiceCollection to add FluentMigrator to.</param>
+        /// <param name="configuration">The IConfiguration to read the database settings from.</param>
+        /// <returns>The IServiceCollection with FluentMigrator configured.</returns>
         public static IServiceCollection ConfigureFluentMigrator(this IServiceCollection services, IConfiguration configuration)
         {
-            // Recupera a connection string e configura o FluentMigrator para SQLite
+            // Retrieve the connection string and configure FluentMigrator for SQLite
             string connectionString = ConnectionStringHelper.GetSqliteConnectionString(configuration);
 
             services.AddFluentMigratorCore()
                 .ConfigureRunner(rb => rb
-                    .AddSQLite()  // Provider para SQLite
+                    .AddSQLite()  // Provider for SQLite
                     .WithGlobalConnectionString(connectionString)
-                    // Escaneia a assembly atual para encontrar as migrações
+                    // Scan the current assembly for migrations
                     .ScanIn(typeof(Program).Assembly).For.Migrations())
                 .AddLogging(lb => lb.AddFluentMigratorConsole());
 
             return services;
         }
 
+        /// <summary>
+        /// Configures controllers for the application.
+        /// </summary>
+        /// <param name="services">The IServiceCollection to add controllers to.</param>
+        /// <returns>The IServiceCollection with controllers configured.</returns>
         public static IServiceCollection ConfigureControllers(this IServiceCollection services)
         {
             services.AddControllers();
             return services;
         }
 
+        /// <summary>
+        /// Configures dependencies for the application.
+        /// </summary>
+        /// <param name="services">The IServiceCollection to add dependencies to.</param>
+        /// <param name="configuration">The IConfiguration to read the dependency settings from.</param>
+        /// <returns>The IServiceCollection with dependencies configured.</returns>
         public static IServiceCollection ConfigureDependencies(this IServiceCollection services, IConfiguration configuration)
         {
             var jwtSettings = new JwtSettings();
@@ -159,7 +202,7 @@ namespace Supplier.Transactions.Extensions
                 {
                     Title = "Supplier.Transactions API",
                     Version = "v1",
-                    Description = "API para transações da Supplier."
+                    Description = "API for Supplier transactions."
                 });
 
                 c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
@@ -173,17 +216,17 @@ namespace Supplier.Transactions.Extensions
 
                 c.AddSecurityRequirement(new OpenApiSecurityRequirement
                 {
-                    {
-                        new OpenApiSecurityScheme
                         {
-                            Reference = new OpenApiReference
+                            new OpenApiSecurityScheme
                             {
-                                Type = ReferenceType.SecurityScheme,
-                                Id = "Bearer"
-                            }
-                        },
-                        new string[] {}
-                    }
+                                Reference = new OpenApiReference
+                                {
+                                    Type = ReferenceType.SecurityScheme,
+                                    Id = "Bearer"
+                                }
+                            },
+                            new string[] {}
+                        }
                 });
 
                 var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
@@ -207,10 +250,14 @@ namespace Supplier.Transactions.Extensions
             services.AddScoped<CustomerMessagePublisher>();
             services.AddTransient<AuthenticatedHttpClientHandler>();
 
-            
             return services;
         }
 
+        /// <summary>
+        /// Configures Rebus messaging for the application.
+        /// </summary>
+        /// <param name="services">The IServiceCollection to add Rebus messaging to.</param>
+        /// <returns>The IServiceCollection with Rebus messaging configured.</returns>
         public static IServiceCollection ConfigureRebusMessaging(this IServiceCollection services)
         {
             services.AddRebus(configure => configure
@@ -218,7 +265,7 @@ namespace Supplier.Transactions.Extensions
                 .Options(o =>
                 {
                     o.SetNumberOfWorkers(1);
-                    // Outras opções podem ser configuradas aqui
+                    // Other options can be configured here
                 })
                 .Logging(l => l.Serilog())
             );

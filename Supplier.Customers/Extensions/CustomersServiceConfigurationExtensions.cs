@@ -1,6 +1,5 @@
 ﻿using FluentMigrator.Runner;
 using FluentValidation;
-using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Data.Sqlite;
 using Microsoft.IdentityModel.Tokens;
@@ -25,8 +24,17 @@ using System.Text;
 
 namespace Supplier.Customers.Extensions
 {
+    /// <summary>
+    /// Extension methods for configuring services related to customers.
+    /// </summary>
     public static class CustomersServiceConfigurationExtensions
     {
+        /// <summary>
+        /// Configures Serilog logging for the application.
+        /// </summary>
+        /// <param name="services">The service collection to add the logging to.</param>
+        /// <param name="configuration">The application configuration.</param>
+        /// <returns>The updated service collection.</returns>
         public static IServiceCollection ConfigureSerilogLogging(this IServiceCollection services, IConfiguration configuration)
         {
             Log.Logger = new LoggerConfiguration()
@@ -34,16 +42,27 @@ namespace Supplier.Customers.Extensions
                 .WriteTo.Seq("http://localhost:5341")
                 .CreateLogger();
 
-            // Configuração adicional, se necessário, pode ser incluída aqui.
+            // Additional configuration, if necessary, can be included here.
             return services;
         }
 
+        /// <summary>
+        /// Configures FluentValidation for the application.
+        /// </summary>
+        /// <param name="services">The service collection to add the validators to.</param>
+        /// <returns>The updated service collection.</returns>
         public static IServiceCollection ConfigureFluentValidation(this IServiceCollection services)
         {
             services.AddValidatorsFromAssemblyContaining<CustomerRequestDtoValidator>();
             return services;
         }
 
+        /// <summary>
+        /// Configures JWT authentication for the application.
+        /// </summary>
+        /// <param name="services">The service collection to add the authentication to.</param>
+        /// <param name="configuration">The application configuration.</param>
+        /// <returns>The updated service collection.</returns>
         public static IServiceCollection ConfigureJwtAuthentication(this IServiceCollection services, IConfiguration configuration)
         {
             services.Configure<JwtSettings>(configuration.GetSection("JwtSettings"));
@@ -75,28 +94,45 @@ namespace Supplier.Customers.Extensions
             return services;
         }
 
+        /// <summary>
+        /// Configures FluentMigrator for the application.
+        /// </summary>
+        /// <param name="services">The service collection to add the migrator to.</param>
+        /// <param name="configuration">The application configuration.</param>
+        /// <returns>The updated service collection.</returns>
         public static IServiceCollection ConfigureFluentMigrator(this IServiceCollection services, IConfiguration configuration)
         {
-            // Recupera a connection string e configura o FluentMigrator para SQLite
+            // Retrieve the connection string and configure FluentMigrator for SQLite
             string connectionString = ConnectionStringHelper.GetSqliteConnectionString(configuration);
 
             services.AddFluentMigratorCore()
                 .ConfigureRunner(rb => rb
-                    .AddSQLite()  // Provider para SQLite
+                    .AddSQLite()  // Provider for SQLite
                     .WithGlobalConnectionString(connectionString)
-                    // Escaneia a assembly atual para encontrar as migrações
+                    // Scan the current assembly for migrations
                     .ScanIn(typeof(Program).Assembly).For.Migrations())
                 .AddLogging(lb => lb.AddFluentMigratorConsole());
 
             return services;
         }
 
+        /// <summary>
+        /// Configures controllers for the application.
+        /// </summary>
+        /// <param name="services">The service collection to add the controllers to.</param>
+        /// <returns>The updated service collection.</returns>
         public static IServiceCollection ConfigureControllers(this IServiceCollection services)
         {
             services.AddControllers();
             return services;
         }
 
+        /// <summary>
+        /// Configures various dependencies for the application.
+        /// </summary>
+        /// <param name="services">The service collection to add the dependencies to.</param>
+        /// <param name="configuration">The application configuration.</param>
+        /// <returns>The updated service collection.</returns>
         public static IServiceCollection ConfigureDependencies(this IServiceCollection services, IConfiguration configuration)
         {
             var jwtSettings = new JwtSettings();
@@ -112,7 +148,7 @@ namespace Supplier.Customers.Extensions
                 {
                     Title = "Supplier.Customers API",
                     Version = "v1",
-                    Description = "API para clientes da Supplier."
+                    Description = "API for Supplier customers."
                 });
 
                 c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
@@ -126,17 +162,17 @@ namespace Supplier.Customers.Extensions
 
                 c.AddSecurityRequirement(new OpenApiSecurityRequirement
                 {
-                        {
-                            new OpenApiSecurityScheme
                             {
-                                Reference = new OpenApiReference
+                                new OpenApiSecurityScheme
                                 {
-                                    Type = ReferenceType.SecurityScheme,
-                                    Id = "Bearer"
-                                }
-                            },
-                            new string[] {}
-                        }
+                                    Reference = new OpenApiReference
+                                    {
+                                        Type = ReferenceType.SecurityScheme,
+                                        Id = "Bearer"
+                                    }
+                                },
+                                new string[] {}
+                            }
                 });
 
                 var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
@@ -160,6 +196,11 @@ namespace Supplier.Customers.Extensions
             return services;
         }
 
+        /// <summary>
+        /// Configures Rebus messaging for the application.
+        /// </summary>
+        /// <param name="services">The service collection to add the messaging to.</param>
+        /// <returns>The updated service collection.</returns>
         public static IServiceCollection ConfigureRebusMessaging(this IServiceCollection services)
         {
             services.AddRebus(configure => configure
@@ -167,7 +208,7 @@ namespace Supplier.Customers.Extensions
                 .Options(o =>
                 {
                     o.SetNumberOfWorkers(1);
-                    // Outras opções (como política de retry) podem ser configuradas aqui
+                    // Other options (such as retry policy) can be configured here
                 })
                 .Logging(l => l.Serilog())
             );
